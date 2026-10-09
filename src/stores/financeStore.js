@@ -11,23 +11,23 @@ export const useFinanceStore = defineStore('finance', () => {
   const totalEntries = computed(() => entries.value.length)
 
   const totalForecast = computed(() =>
-    entries.value.reduce((s, e) => s + (e.totalAmount || 0), 0))
+    entries.value.reduce((s, e) => s + (e.forecast || 0), 0))
 
   const totalPaid = computed(() =>
-    entries.value.filter(e => e.status === 'paid').reduce((s, e) => s + (e.totalAmount || 0), 0))
+    entries.value.filter(e => e.status === 'paid').reduce((s, e) => s + (e.forecast || 0), 0))
 
   const totalPending = computed(() => {
     const t = today()
     return entries.value
       .filter(e => e.status !== 'paid' && (!e.dueDate || e.dueDate >= t))
-      .reduce((s, e) => s + (e.totalAmount || 0), 0)
+      .reduce((s, e) => s + (e.forecast || 0), 0)
   })
 
   const overdueUnpaid = computed(() => {
     const t = today()
     return entries.value
       .filter(e => e.status !== 'paid' && e.dueDate && e.dueDate < t)
-      .reduce((s, e) => s + (e.totalAmount || 0), 0)
+      .reduce((s, e) => s + (e.forecast || 0), 0)
   })
 
   const forecastVsPaidDiff = computed(() => totalForecast.value - totalPaid.value)
@@ -44,8 +44,8 @@ export const useFinanceStore = defineStore('finance', () => {
     entries.value.forEach(e => {
       const k = e.responsible || 'Sem responsável'
       if (!map[k]) map[k] = { name: k, forecast: 0, paid: 0, count: 0 }
-      map[k].forecast += e.totalAmount || 0
-      if (e.status === 'paid') map[k].paid += e.totalAmount || 0
+      map[k].forecast += e.forecast || 0
+      if (e.status === 'paid') map[k].paid += e.forecast || 0
       map[k].count++
     })
     return Object.values(map).sort((a, b) => b.forecast - a.forecast)
@@ -56,7 +56,7 @@ export const useFinanceStore = defineStore('finance', () => {
     entries.value.filter(e => e.status === 'paid').forEach(e => {
       const k = e.payer || e.responsible || 'Desconhecido'
       if (!map[k]) map[k] = { name: k, total: 0, count: 0 }
-      map[k].total += e.totalAmount || 0
+      map[k].total += e.forecast || 0
       map[k].count++
     })
     return Object.values(map).sort((a, b) => b.total - a.total)
@@ -67,8 +67,8 @@ export const useFinanceStore = defineStore('finance', () => {
     entries.value.forEach(e => {
       const k = e.center || 'Sem centro'
       if (!map[k]) map[k] = { name: k, forecast: 0, paid: 0 }
-      map[k].forecast += e.totalAmount || 0
-      if (e.status === 'paid') map[k].paid += e.totalAmount || 0
+      map[k].forecast += e.forecast || 0
+      if (e.status === 'paid') map[k].paid += e.forecast || 0
     })
     return Object.values(map).sort((a, b) => b.forecast - a.forecast)
   })

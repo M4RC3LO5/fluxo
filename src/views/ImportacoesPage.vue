@@ -45,21 +45,24 @@
       >
         <input ref="fileInputRef" type="file" class="hidden" :accept="acceptedExtensions" @change="handleFileChange" />
 
-        <div v-if="!selectedFile">
-          <div class="text-5xl mb-2 text-center">{{ isDragging ? '📂' : '📁' }}</div>
-          <p class="text-white font-semibold text-center">Arraste o arquivo aqui</p>
-          <p class="text-slate-500 text-xs text-center mt-1">ou clique para selecionar · {{ acceptedLabel }}</p>
+        <div v-if="!selectedFile" class="flex flex-col items-center gap-2">
+          <div class="text-5xl">{{ isDragging ? '📂' : '📁' }}</div>
+          <p class="text-white font-semibold">Arraste o arquivo aqui</p>
+          <p class="text-slate-500 text-xs">ou clique para selecionar · {{ acceptedLabel }}</p>
         </div>
 
-        <div v-else class="flex items-center gap-4 w-full max-w-md">
-          <span class="text-3xl">{{ fileIcon }}</span>
+        <div v-else class="flex items-center gap-3 bg-white/5 rounded-2xl px-4 py-3 w-full max-w-sm mx-auto">
+          <span class="text-2xl shrink-0">{{ fileIcon }}</span>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-white truncate">{{ selectedFile.name }}</p>
-            <p class="text-xs text-slate-500">{{ formatFileSize(selectedFile.size) }}</p>
+            <p class="text-sm font-semibold text-white truncate leading-tight">{{ selectedFile.name }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">{{ formatFileSize(selectedFile.size) }}</p>
           </div>
-          <button @click.stop="clearFile" class="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-lg hover:bg-white/5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          <button
+            @click.stop="clearFile"
+            class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-all"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
             </svg>
           </button>
         </div>
@@ -267,7 +270,7 @@ async function runImport() {
   importResult.value = null
 
   try {
-    const entries = await parseXlsx(selectedFile.value)
+    const { entries, warnings } = await parseXlsx(selectedFile.value)
 
     financeStore.setEntries(entries)
     importStore.addImport({
@@ -278,10 +281,11 @@ async function runImport() {
       count:       entries.length,
     })
 
+    const warnText = warnings && warnings.length ? ` | ${warnings.join(' ')}` : ''
     importResult.value = {
       success: true,
       title:   `${entries.length} registros importados com sucesso`,
-      message: `Versão "${importOptions.value.versionName || selectedFile.value.name}" ativada.`,
+      message: `Versão "${importOptions.value.versionName || selectedFile.value.name}" ativada.${warnText}`,
     }
 
     clearFile()
