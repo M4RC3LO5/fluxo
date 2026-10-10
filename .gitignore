@@ -6,3 +6,6 @@ dist
 *.log
 .DS_Store
 Thumbs.db
+tests/e2e/screenshots/
+test-results/
+playwright-report/
