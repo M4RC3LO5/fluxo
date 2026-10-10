@@ -122,7 +122,7 @@
                   <p class="text-xs font-semibold text-white truncate">{{ entry.description || '—' }}</p>
                   <p class="text-[10px] text-slate-500 mt-1">{{ formatDate(entry.dueDate) }} · {{ entry.responsible }}</p>
                 </div>
-                <p class="text-xs font-mono font-bold text-amber-400 whitespace-nowrap ml-4">{{ formatCurrency(entry.totalAmount) }}</p>
+                <p class="text-xs font-mono font-bold text-amber-400 whitespace-nowrap ml-4">{{ formatCurrency(entry.forecast) }}</p>
               </div>
             </div>
           </div>

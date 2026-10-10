@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted, nextTick } from 'vue'
 import { Chart, registerables } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { useFinanceStore } from '@/stores/financeStore.js'
@@ -100,12 +100,12 @@ function createCharts() {
   const topPayers = financeStore.totalByPayer.slice(0, 5)
   payerChart = new Chart(payerChartCanvas.value, {
     type: 'bar',
-    indexAxis: 'y',
     data: {
       labels: topPayers.map(p => p.name),
       datasets: [{ label: 'Total Pago', data: topPayers.map(p => p.total), backgroundColor: '#10b98140', borderColor: '#10b981', borderWidth: 1, borderRadius: 4 }]
     },
     options: {
+      indexAxis: 'y',
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, datalabels: { ...datalabelsConfig, align: 'right', anchor: 'end' } },
       scales: {
@@ -138,7 +138,7 @@ function getMonthlyTrend() {
   financeStore.entries.forEach(e => {
     if (!e.dueDate) return
     const key = e.dueDate.slice(0, 7)
-    map[key] = (map[key] || 0) + (e.totalAmount || 0)
+    map[key] = (map[key] || 0) + (e.forecast || 0)
   })
   const keys = Object.keys(map).sort()
   return {
@@ -147,8 +147,14 @@ function getMonthlyTrend() {
   }
 }
 
-onMounted(() => { if (financeStore.totalEntries > 0) createCharts() })
-watch(() => financeStore.entries, () => { if (financeStore.totalEntries > 0) createCharts() }, { deep: true })
+async function refreshCharts() {
+  if (financeStore.totalEntries === 0) return
+  await nextTick()
+  createCharts()
+}
+
+onMounted(refreshCharts)
+watch(() => financeStore.entries, refreshCharts)
 watch(() => financeStore.showDataLabels, () => {
   if (barChart) barChart.update()
   if (pieChart) pieChart.update()

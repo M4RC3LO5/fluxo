@@ -4,7 +4,7 @@ export function getSmartAlerts(entries) {
   // Duplicatas (mesma descrição + mesmo valor + mesmo vencimento)
   const seen = {}
   entries.forEach(e => {
-    const key = `${e.description}|${e.totalAmount}|${e.dueDate}`
+    const key = `${e.description}|${e.forecast}|${e.dueDate}`
     seen[key] = (seen[key] || 0) + 1
   })
   const dupes = Object.values(seen).filter(v => v > 1).reduce((s, v) => s + (v - 1), 0)
