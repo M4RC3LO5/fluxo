@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { importFixture, FIXED_NOW } from './helpers/importFixture.js'
 
 test('dashboard renderiza os 4 gráficos completos, sem erros de console', async ({ page }) => {
   const errors = []
@@ -7,13 +8,10 @@ test('dashboard renderiza os 4 gráficos completos, sem erros de console', async
 
   // viewport alto: screenshot fullPage redimensiona a janela e reinicia a animação dos gráficos responsivos
   await page.setViewportSize({ width: 1280, height: 2800 })
-  await page.goto('/importacoes')
-  await page.getByText('Planilha Excel', { exact: true }).first().click()
-  await page.locator('input[type=file]').setInputFiles('tests/fixtures/fluxo_exemplo.xlsx')
-  await page.getByText('Nome da versão').locator('xpath=following-sibling::input').fill('teste-e2e')
-  await page.getByRole('button', { name: /Importar/ }).click()
-  await expect(page.getByText('registros importados com sucesso')).toBeVisible()
+  await importFixture(page)
 
+  // setFixedTime congela Date.now() e o Chart.js anima por Date.now(): libera o relógio (mesma data) para a animação rodar
+  await page.clock.setSystemTime(FIXED_NOW)
   await page.getByRole('link', { name: /Dashboard/ }).first().click()
   await page.waitForTimeout(2000)
 

@@ -5,7 +5,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold text-white">Lançamentos</h1>
-        <p class="text-slate-400 text-sm mt-1">
+        <p data-testid="lanc-count" class="text-slate-400 text-sm mt-1">
           {{ filteredEntries.length }} de {{ financeStore.totalEntries }} registros
         </p>
       </div>
@@ -30,6 +30,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
           </svg>
           <input
+            data-testid="filter-search"
             v-model="financeStore.filters.search"
             type="text"
             placeholder="Buscar descrição ou pagador..."
@@ -39,6 +40,7 @@
 
         <!-- Status -->
         <select
+          data-testid="filter-status"
           v-model="financeStore.filters.status"
           class="bg-white/5 border border-white/10 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 text-white [&>option]:bg-slate-800"
         >
@@ -50,6 +52,7 @@
 
         <!-- Responsável -->
         <select
+          data-testid="filter-responsible"
           v-model="financeStore.filters.responsible"
           class="bg-white/5 border border-white/10 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 text-white [&>option]:bg-slate-800"
         >
@@ -59,6 +62,7 @@
 
         <!-- Centro de custo -->
         <select
+          data-testid="filter-center"
           v-model="financeStore.filters.center"
           class="bg-white/5 border border-white/10 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-indigo-500 text-white [&>option]:bg-slate-800"
         >
@@ -70,6 +74,7 @@
       <!-- Limpar filtros -->
       <div v-if="hasActiveFilters" class="mt-3 flex justify-end">
         <button
+          data-testid="filter-clear"
           @click="clearFilters"
           class="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
         >
@@ -134,6 +139,7 @@
           </thead>
           <tbody>
             <tr
+              data-testid="lanc-row"
               v-for="(entry, idx) in sortedEntries"
               :key="entry.id"
               @click="openDetail(entry)"
@@ -204,7 +210,7 @@
           </span>
           <div class="flex items-center gap-6 text-xs">
             <div class="text-slate-400">
-              Previsto: <span class="text-slate-200 font-mono font-medium">{{ formatCurrency(totalForecastFiltered) }}</span>
+              Previsto: <span data-testid="lanc-footer-forecast" class="text-slate-200 font-mono font-medium">{{ formatCurrency(totalForecastFiltered) }}</span>
             </div>
             <div class="text-slate-400">
               Pago: <span class="text-emerald-400 font-mono font-medium">{{ formatCurrency(totalPaidFiltered) }}</span>
@@ -217,7 +223,7 @@
     <!-- Modal de detalhe -->
     <Teleport to="body">
       <Transition name="modal">
-        <div v-if="selectedEntry" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="selectedEntry = null">
+        <div v-if="selectedEntry" data-testid="lanc-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="selectedEntry = null">
           <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
           <div class="relative bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
 
@@ -227,7 +233,7 @@
                 <h2 class="text-white font-semibold text-lg leading-snug">{{ selectedEntry.description }}</h2>
                 <p class="text-slate-400 text-sm mt-0.5">{{ formatDate(selectedEntry.dueDate) }}</p>
               </div>
-              <button @click="selectedEntry = null" class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+              <button data-testid="lanc-modal-close" aria-label="Fechar" @click="selectedEntry = null" class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
