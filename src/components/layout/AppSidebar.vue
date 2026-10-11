@@ -1,5 +1,5 @@
 <template>
-  <aside class="fixed left-0 top-14 bottom-0 z-40 flex flex-col transition-all duration-300 border-r border-white/[0.05]"
+  <aside data-testid="sidebar" class="hidden md:flex fixed left-0 top-14 bottom-0 z-40 flex-col transition-all duration-300 border-r border-white/[0.05]"
     :class="sidebarOpen ? 'w-64' : 'w-16'"
     style="background: rgba(17,24,39,0.95); backdrop-filter: blur(12px);">
     <nav class="flex-1 py-4 space-y-1 px-2">
