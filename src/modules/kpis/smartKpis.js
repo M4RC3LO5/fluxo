@@ -1,3 +1,5 @@
+import { toLocalISODate } from '@/utils/formatters.js'
+
 export function getSmartAlerts(entries) {
   const alerts = []
 
@@ -19,7 +21,7 @@ export function getSmartAlerts(entries) {
   }
 
   // Vencidos não pagos
-  const today = new Date().toISOString().slice(0, 10)
+  const today = toLocalISODate(new Date())
   const overdue = entries.filter(e => e.status !== 'paid' && e.dueDate && e.dueDate < today).length
   if (overdue > 0) {
     alerts.push({ id: 'overdue', icon: '🚨', label: 'Vencidos Não Pagos', count: overdue, severity: 'danger' })

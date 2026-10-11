@@ -294,6 +294,7 @@
 <script setup>
 import { computed, ref, watch, onUnmounted } from 'vue'
 import { useFinanceStore } from '@/stores/financeStore'
+import { today } from '@/utils/formatters.js'
 
 const financeStore = useFinanceStore()
 
@@ -395,23 +396,22 @@ function formatCurrency(v) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0)
 }
 
-const TODAY = new Date().toISOString().slice(0, 10)
 
 function statusLabel(e) {
   if (e.status === 'paid') return 'Pago'
-  if (e.dueDate && e.dueDate < TODAY) return 'Vencido'
+  if (e.dueDate && e.dueDate < today()) return 'Vencido'
   return 'Pendente'
 }
 
 function statusClass(e) {
   if (e.status === 'paid') return 'bg-emerald-500/15 text-emerald-400'
-  if (e.dueDate && e.dueDate < TODAY) return 'bg-rose-500/15 text-rose-400'
+  if (e.dueDate && e.dueDate < today()) return 'bg-rose-500/15 text-rose-400'
   return 'bg-amber-500/15 text-amber-400'
 }
 
 function statusDotClass(e) {
   if (e.status === 'paid') return 'bg-emerald-400'
-  if (e.dueDate && e.dueDate < TODAY) return 'bg-rose-400'
+  if (e.dueDate && e.dueDate < today()) return 'bg-rose-400'
   return 'bg-amber-400'
 }
 </script>

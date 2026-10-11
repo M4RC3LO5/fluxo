@@ -12,8 +12,15 @@ export function formatDate(dateStr) {
   return `${d}/${m}/${y}`
 }
 
+/** 'YYYY-MM-DD' no fuso local (toISOString converteria para UTC e viraria o dia à noite no Brasil) */
+export function toLocalISODate(d) {
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 export function parseDate(dateStr) {
   if (!dateStr) return null
+  if (dateStr instanceof Date) return isNaN(dateStr) ? null : toLocalISODate(dateStr) // célula de data (cellDates)
   const clean = String(dateStr).trim()
   // ISO: 2024-01-15
   if (/^\d{4}-\d{2}-\d{2}/.test(clean)) return clean.slice(0, 10)
@@ -32,5 +39,5 @@ export function parseDate(dateStr) {
 }
 
 export function today() {
-  return new Date().toISOString().slice(0, 10)
+  return toLocalISODate(new Date())
 }
