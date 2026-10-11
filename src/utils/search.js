@@ -5,6 +5,10 @@ export function normalizeText(s) {
   return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
+function collapseSpaces(s) {
+  return s.replace(/\s+/g, ' ')
+}
+
 /** Rótulo de status calculado, mesma regra da tela: pago / vencido (venceu antes de hoje) / pendente */
 export function statusLabel(entry, today) {
   if (entry.status === 'paid') return 'pago'
@@ -21,7 +25,8 @@ function formatDueDate(d) {
 /** Texto único e normalizado com tudo que o usuário enxerga (ou digitaria) de um lançamento. */
 export function buildSearchIndex(entry, today) {
   const money = v => (v == null ? [] : [brNumber.format(v), String(v)])
-  return normalizeText([
+  // espaços nas bordas: permite buscar "conta " (fim de campo) e " conta" (início de campo)
+  return ' ' + collapseSpaces(normalizeText([
     entry.description,
     entry.payer,
     entry.responsible,
@@ -32,11 +37,14 @@ export function buildSearchIndex(entry, today) {
     formatDueDate(entry.dueDate),
     ...money(entry.forecast),
     ...money(entry.paid)
-  ].filter(Boolean).join(' | '))
+  ].filter(Boolean).join(' | '))) + ' '
 }
 
-/** Termo vazio (após trim) casa tudo. */
+/**
+ * Espaços são significativos: "conta" ≠ "conta ". Só colapsa espaços múltiplos em um.
+ * Termo vazio ou só de espaços casa tudo.
+ */
 export function matches(index, term) {
-  const q = normalizeText(term).trim()
-  return !q || index.includes(q)
+  const q = collapseSpaces(normalizeText(term))
+  return !q.trim() || index.includes(q)
 }
