@@ -292,7 +292,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { useFinanceStore } from '@/stores/financeStore'
 
 const financeStore = useFinanceStore()
@@ -371,6 +371,16 @@ const totalPaidFiltered = computed(() =>
 // ─── Modal de detalhe ─────────────────────────────────────────────────────────
 const selectedEntry = ref(null)
 function openDetail(entry) { selectedEntry.value = entry }
+
+// Esc fecha o modal; o listener só existe enquanto o modal está aberto
+function onKeydown(e) {
+  if (e.key === 'Escape') selectedEntry.value = null
+}
+watch(selectedEntry, (entry) => {
+  if (entry) window.addEventListener('keydown', onKeydown)
+  else window.removeEventListener('keydown', onKeydown)
+})
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 // ─── Formatadores ─────────────────────────────────────────────────────────────
 function formatDate(d) {
