@@ -16,10 +16,12 @@ export function statusLabel(entry, today) {
   return 'pendente'
 }
 
-function formatDueDate(d) {
-  if (!d) return ''
-  const [y, m, day] = d.slice(0, 10).split('-')
-  return `${day}/${m}/${y}`
+/** Todas as grafias de uma data ISO que o usuário pode digitar: dd/mm/aaaa, dd/mm/aa, dd/mm, aaaa-mm-dd, d/m/aaaa, d/m */
+function dateForms(iso) {
+  if (!iso) return []
+  const [y, m, d] = iso.slice(0, 10).split('-')
+  const [dn, mn] = [String(Number(d)), String(Number(m))]
+  return [`${d}/${m}/${y}`, `${d}/${m}/${y.slice(2)}`, `${d}/${m}`, `${y}-${m}-${d}`, `${dn}/${mn}/${y}`, `${dn}/${mn}`]
 }
 
 /** Texto único e normalizado com tudo que o usuário enxerga (ou digitaria) de um lançamento. */
@@ -34,9 +36,9 @@ export function buildSearchIndex(entry, today) {
     entry.notes,
     entry.type === 'receita' ? 'receita' : 'despesa',
     statusLabel(entry, today),
-    formatDueDate(entry.dueDate),
+    dateForms(entry.dueDate).join(' '),
     ...money(entry.forecast),
-    ...money(entry.paid)
+    ...(entry.paid ? money(entry.paid) : []) // pago zerado/ausente fica fora do índice
   ].filter(Boolean).join(' | '))) + ' '
 }
 
@@ -46,5 +48,9 @@ export function buildSearchIndex(entry, today) {
  */
 export function matches(index, term) {
   const q = collapseSpaces(normalizeText(term))
-  return !q.trim() || index.includes(q)
+  if (!q.trim()) return true
+  // "5/11/2026" não pode casar o fim de "15/11/2026": termo que começa com um único dígito
+  // seguido de "/" só vale no começo de um token (início do índice, após espaço ou "|")
+  if (/^\d\//.test(q)) return new RegExp('(^|[ |])' + q.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&')).test(index)
+  return index.includes(q)
 }
