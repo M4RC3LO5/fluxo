@@ -223,8 +223,8 @@
     <!-- Modal de detalhe -->
     <Teleport to="body">
       <Transition name="modal">
-        <div v-if="selectedEntry" data-testid="lanc-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="selectedEntry = null">
-          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div v-if="selectedEntry" data-testid="lanc-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="selectedEntry = null"></div>
           <div class="relative bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
 
             <!-- Header do modal -->
