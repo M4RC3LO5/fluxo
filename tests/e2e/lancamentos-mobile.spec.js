@@ -67,6 +67,21 @@ test.describe('Lançamentos no celular', () => {
     await page.getByRole('button', { name: 'Aplicar' }).tap()
     await expect(cards(page).first()).toContainText('Material escritório')
     await expect(page.getByTestId('lanc-group-header')).toHaveCount(0)
+    await expect(page.getByTestId('filters-button')).toHaveText('Filtros (1)')
+  })
+
+  test('Contador soma responsável e ordenação', async ({ page }) => {
+    const botao = page.getByTestId('filters-button')
+    await botao.tap()
+    await page.getByTestId('sheet-responsible').selectOption({ label: 'Marcelo' })
+    await page.getByTestId('sheet-sort').selectOption({ label: 'Maior valor' })
+    await page.getByRole('button', { name: 'Aplicar' }).tap()
+    await expect(botao).toHaveText('Filtros (2)')
+    await botao.tap()
+    await page.getByRole('button', { name: 'Limpar' }).tap()
+    await page.getByRole('button', { name: 'Aplicar' }).tap()
+    await expect(botao).toHaveText('Filtros')
+    await expect(cards(page)).toHaveCount(15)
   })
 
   test('Detalhe abre como painel inferior', async ({ page }) => {

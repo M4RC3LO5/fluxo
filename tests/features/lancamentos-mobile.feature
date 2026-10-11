@@ -50,6 +50,7 @@ Funcionalidade: Lançamentos no celular
     E toco em "Aplicar"
     Então o primeiro card é "Material escritório"
     E não vejo cabeçalhos de grupo
+    E o botão de filtros exibe "Filtros (1)"
 
   Cenário: Detalhe abre como painel inferior
     Quando toco no card "Recebimento cliente A"
@@ -63,3 +64,15 @@ Funcionalidade: Lançamentos no celular
     Quando acesso o menu "Lançamentos"
     Então vejo a tabela com 15 linhas
     E não vejo cards de lançamento
+
+  Cenário: Contador soma responsável e ordenação
+    Quando toco em "Filtros"
+    E seleciono o responsável "Marcelo"
+    E seleciono a ordenação "Maior valor"
+    E toco em "Aplicar"
+    Então o botão de filtros exibe "Filtros (2)"
+    Quando toco em "Filtros"
+    E toco em "Limpar"
+    E toco em "Aplicar"
+    Então o botão de filtros exibe "Filtros"
+    E vejo 15 cards de lançamento

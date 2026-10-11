@@ -121,3 +121,16 @@ Funcionalidade: Lista de lançamentos
       | 2026-11-15  | 1      |
       | 5/11/2026   | 1      |
       | /11/2026    | 9      |
+
+  Cenário: Botão X limpa a busca de uma vez
+    Quando busco por "aluguel"
+    Então a tabela exibe 2 linhas
+    Quando clico no botão "Limpar busca"
+    Então o campo de busca está vazio
+    E a tabela exibe 15 linhas
+    E o campo de busca está com foco
+
+  Cenário: Botão X só aparece com texto na busca
+    Então o botão "Limpar busca" não está visível
+    Quando busco por "a"
+    Então o botão "Limpar busca" está visível

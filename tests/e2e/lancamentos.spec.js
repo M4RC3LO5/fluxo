@@ -129,6 +129,27 @@ test.describe('Lista de lançamentos', () => {
     await page.keyboard.press('Escape')
     await expect(modal).toBeHidden()
   })
+
+  test('Botão X limpa a busca de uma vez', async ({ page }) => {
+    const campo = page.getByTestId('filter-search')
+    await search(page, 'aluguel')
+    await expect(rows(page)).toHaveCount(2)
+    await page.getByRole('button', { name: 'Limpar busca' }).click()
+    await expect(campo).toHaveValue('')
+    await expect(rows(page)).toHaveCount(15)
+    await expect(campo).toBeFocused()
+  })
+
+  test('Botão X só aparece com texto na busca', async ({ page }) => {
+    const x = page.getByRole('button', { name: 'Limpar busca' })
+    await expect(x).toBeHidden()
+    await search(page, 'a')
+    await expect(x).toBeVisible()
+    // alvo de toque >= 44x44 (celular e desktop)
+    const box = await x.boundingBox()
+    expect(box.width).toBeGreaterThanOrEqual(44)
+    expect(box.height).toBeGreaterThanOrEqual(44)
+  })
 })
 
 test('Estado vazio sem importação', async ({ page }) => {
