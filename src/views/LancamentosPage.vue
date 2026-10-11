@@ -391,8 +391,12 @@ const statusChips = [
 ]
 const filterSheetOpen = ref(false)
 const sortValue = computed(() => `${sort.value.key}:${sort.value.dir}`)
+const DEFAULT_SORT = 'dueDate:asc'
+// tudo que está fora do padrão no painel: responsável, centro e ordenação diferente de "Vencimento ↑"
 const activeSheetFilters = computed(() =>
-  (financeStore.filters.responsible ? 1 : 0) + (financeStore.filters.center ? 1 : 0))
+  (financeStore.filters.responsible ? 1 : 0) +
+  (financeStore.filters.center ? 1 : 0) +
+  (sortValue.value !== DEFAULT_SORT ? 1 : 0))
 const filtersLabel = computed(() => activeSheetFilters.value ? `Filtros (${activeSheetFilters.value})` : 'Filtros')
 
 function applySheet({ responsible, center, sort: sortStr }) {
