@@ -73,3 +73,28 @@ Funcionalidade: Lista de lançamentos
     Quando acesso o menu "Lançamentos"
     Então vejo "Nenhum dado importado"
     E vejo o botão "Ir para Importações"
+
+  Esquema do Cenário: Busca encontra qualquer informação do lançamento
+    Quando busco por "<termo>"
+    Então a tabela exibe <linhas> linhas
+
+    Exemplos:
+      | termo       | linhas | campo          |
+      | Carlos      | 4      | responsável    |
+      | Tecnologia  | 2      | centro         |
+      | NF 1042     | 1      | observação     |
+      | manutencao  | 1      | sem acento     |
+      | 8.200       | 2      | valor          |
+      | 15/11/2026  | 1      | vencimento     |
+      | vencido     | 1      | status         |
+      | receita     | 4      | tipo           |
+
+  Cenário: Fechar modal clicando fora
+    Quando clico na linha "Recebimento cliente A"
+    E clico fora do modal
+    Então o modal não está visível
+
+  Cenário: Fechar modal com Esc
+    Quando clico na linha "Recebimento cliente A"
+    E pressiono a tecla "Escape"
+    Então o modal não está visível

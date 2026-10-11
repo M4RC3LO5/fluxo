@@ -94,6 +94,32 @@ test.describe('Lista de lançamentos', () => {
     await page.getByTestId('lanc-modal-close').click()
     await expect(modal).toBeHidden()
   })
+
+  for (const [termo, linhas] of [
+    ['Carlos', 4], ['Tecnologia', 2], ['NF 1042', 1], ['manutencao', 1],
+    ['8.200', 2], ['15/11/2026', 1], ['vencido', 1], ['receita', 4],
+  ]) {
+    test(`Busca encontra qualquer informação: "${termo}"`, async ({ page }) => {
+      await page.getByTestId('filter-search').fill(termo)
+      await expect(rows(page)).toHaveCount(linhas)
+    })
+  }
+
+  test('Fechar modal clicando fora', async ({ page }) => {
+    await rows(page).filter({ hasText: 'Recebimento cliente A' }).click()
+    const modal = page.getByTestId('lanc-modal')
+    await expect(modal).toBeVisible()
+    await page.mouse.click(5, 5) // fundo escuro, fora do cartão
+    await expect(modal).toBeHidden()
+  })
+
+  test('Fechar modal com Esc', async ({ page }) => {
+    await rows(page).filter({ hasText: 'Recebimento cliente A' }).click()
+    const modal = page.getByTestId('lanc-modal')
+    await expect(modal).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(modal).toBeHidden()
+  })
 })
 
 test('Estado vazio sem importação', async ({ page }) => {
