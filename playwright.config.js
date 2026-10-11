@@ -6,6 +6,8 @@ export default defineConfig({
   timeout: 60000,
   use: {
     baseURL: 'http://localhost:5173',
+    timezoneId: 'America/Sao_Paulo',
+    locale: 'pt-BR',
     launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {}
   },
   webServer: {

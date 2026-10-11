@@ -98,3 +98,26 @@ Funcionalidade: Lista de lançamentos
     Quando clico na linha "Recebimento cliente A"
     E pressiono a tecla "Escape"
     Então o modal não está visível
+
+  # 2ª linha: termo 'conta ' com espaço final (Gherkin não preserva espaço no fim de célula)
+  Esquema do Cenário: Espaço no termo de busca é respeitado
+    Quando busco por "<termo>"
+    Então a tabela exibe <linhas> linhas
+
+    Exemplos:
+      | termo  | linhas |
+      | conta  | 2      |
+      | conta  | 1      |
+
+  Esquema do Cenário: Busca por data em formatos diferentes
+    Quando busco por "<termo>"
+    Então a tabela exibe <linhas> linhas
+
+    Exemplos:
+      | termo       | linhas |
+      | 15/11/2026  | 1      |
+      | 15/11/26    | 1      |
+      | 15/11       | 1      |
+      | 2026-11-15  | 1      |
+      | 5/11/2026   | 1      |
+      | /11/2026    | 9      |

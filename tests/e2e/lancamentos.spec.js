@@ -105,6 +105,23 @@ test.describe('Lista de lançamentos', () => {
     })
   }
 
+  // "conta " tem espaço final: no .feature ele não sobrevive à célula da tabela (ver comentário lá)
+  for (const [termo, linhas] of [['conta', 2], ['conta ', 1]]) {
+    test(`Espaço no termo de busca é respeitado: ${JSON.stringify(termo)}`, async ({ page }) => {
+      await page.getByTestId('filter-search').fill(termo)
+      await expect(rows(page)).toHaveCount(linhas)
+    })
+  }
+
+  for (const [termo, linhas] of [
+    ['15/11/2026', 1], ['15/11/26', 1], ['15/11', 1], ['2026-11-15', 1], ['5/11/2026', 1], ['/11/2026', 9],
+  ]) {
+    test(`Busca por data em formatos diferentes: "${termo}"`, async ({ page }) => {
+      await page.getByTestId('filter-search').fill(termo)
+      await expect(rows(page)).toHaveCount(linhas)
+    })
+  }
+
   test('Fechar modal clicando fora', async ({ page }) => {
     await rows(page).filter({ hasText: 'Recebimento cliente A' }).click()
     const modal = page.getByTestId('lanc-modal')
