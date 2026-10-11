@@ -31,12 +31,23 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
           </svg>
           <input
+            ref="searchInput"
             data-testid="filter-search"
             v-model="financeStore.filters.search"
             type="text"
             placeholder="Buscar em qualquer campo..."
-            class="w-full min-h-[44px] md:min-h-0 bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
+            class="w-full min-h-[44px] md:min-h-0 bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm rounded-xl pl-9 pr-11 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 [&::-webkit-search-cancel-button]:hidden"
           />
+          <button
+            v-if="financeStore.filters.search"
+            type="button"
+            data-testid="search-clear"
+            aria-label="Limpar busca"
+            @click="clearSearch"
+            class="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition-colors hover:text-white active:bg-white/10"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
         </div>
         <button
           type="button"
@@ -329,6 +340,12 @@ const hasActiveFilters = computed(() => {
   const f = financeStore.filters
   return f.status !== 'all' || f.search || f.responsible || f.center
 })
+
+const searchInput = ref(null)
+function clearSearch() {
+  financeStore.filters.search = ''
+  searchInput.value?.focus()
+}
 
 function clearFilters() {
   financeStore.filters.status = 'all'
