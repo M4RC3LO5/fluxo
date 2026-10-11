@@ -33,7 +33,7 @@
             data-testid="filter-search"
             v-model="financeStore.filters.search"
             type="text"
-            placeholder="Buscar descrição ou pagador..."
+            placeholder="Buscar em qualquer campo..."
             class="w-full bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50"
           />
         </div>

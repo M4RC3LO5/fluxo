@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { today } from '@/utils/formatters.js'
+import { buildSearchIndex, matches } from '@/utils/search.js'
 
 export const useFinanceStore = defineStore('finance', () => {
   const entries = ref([])
@@ -90,11 +91,7 @@ export const useFinanceStore = defineStore('finance', () => {
       if (status === 'overdue' && (e.status === 'paid' || !e.dueDate || e.dueDate >= t)) return false
       if (responsible && e.responsible !== responsible) return false
       if (center && e.center !== center) return false
-      if (search) {
-        const q = search.toLowerCase()
-        if (!(e.description || '').toLowerCase().includes(q) &&
-            !(e.payer || '').toLowerCase().includes(q)) return false
-      }
+      if (search && !matches(buildSearchIndex(e, t), search)) return false
       return true
     })
   })
