@@ -145,11 +145,19 @@
       </div>
     </section>
 
+  <!-- Overlay de drag & drop na página (desktop); visual apenas, os cards abaixo continuam recebendo o drop -->
+  <div
+    v-if="pageDragging"
+    data-testid="drop-overlay"
+    class="pointer-events-none fixed inset-2 z-[70] hidden items-center justify-center rounded-2xl border-4 border-dashed border-brand-400 bg-brand-500/10 md:flex"
+  >
+    <span class="rounded-2xl bg-slate-900/90 px-6 py-3 text-lg font-bold text-white shadow-2xl">Solte para importar</span>
+  </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useFinanceStore } from '@/stores/financeStore.js'
 import { useImportStore } from '@/stores/importStore.js'
 import { parseXlsx } from '@/modules/importers/xlsxImporter.js'
@@ -234,10 +242,68 @@ function onCardDragLeave(e, source) {
   if (!e.currentTarget.contains(e.relatedTarget) && dragOverId.value === source.id) dragOverId.value = null
 }
 function onCardDrop(e, source) {
-  dragOverId.value = null
+  resetDrag()
   const file = e.dataTransfer?.files?.[0]
   if (file) processFile(source, file)
 }
+
+// ─── Drag & drop: em qualquer lugar da página (detecta a fonte pela extensão) ─
+const pageDragging = ref(false)
+let dragDepth = 0
+
+const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files')
+function resetDrag() {
+  dragDepth = 0
+  pageDragging.value = false
+  dragOverId.value = null
+}
+function onWindowDragEnter(e) {
+  if (!hasFiles(e)) return
+  e.preventDefault()
+  dragDepth++
+  pageDragging.value = true
+}
+function onWindowDragOver(e) {
+  if (hasFiles(e)) e.preventDefault() // sem isso o navegador não permite soltar (e abriria o arquivo)
+}
+function onWindowDragLeave(e) {
+  if (!hasFiles(e)) return
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) pageDragging.value = false
+}
+function onWindowDrop(e) {
+  if (!hasFiles(e)) return
+  e.preventDefault()
+  resetDrag()
+  const file = e.dataTransfer.files?.[0]
+  if (!file) return
+
+  importResult.value = null
+  importError.value = null
+  const ext = extensionOf(file)
+  const candidates = importSources.filter(s => s.ext === ext)
+  const available = candidates.find(s => s.available)
+  if (available) return processFile(available, file)
+  if (candidates.length) {
+    const nomes = candidates.map(s => s.name).join(', ')
+    importError.value = `Arquivos ${ext} pertencem a ${candidates.length > 1 ? 'fontes' : 'uma fonte'} que ainda não ${candidates.length > 1 ? 'estão disponíveis' : 'está disponível'} (${nomes}).`
+  } else {
+    importError.value = `Formato ${ext || 'sem extensão'} não reconhecido. Envie um arquivo .xlsx.`
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('dragenter', onWindowDragEnter)
+  window.addEventListener('dragover', onWindowDragOver)
+  window.addEventListener('dragleave', onWindowDragLeave)
+  window.addEventListener('drop', onWindowDrop)
+})
+onUnmounted(() => {
+  window.removeEventListener('dragenter', onWindowDragEnter)
+  window.removeEventListener('dragover', onWindowDragOver)
+  window.removeEventListener('dragleave', onWindowDragLeave)
+  window.removeEventListener('drop', onWindowDrop)
+})
 
 // ─── Histórico ───────────────────────────────────────────────────────────
 function getSourceIcon(source) {
