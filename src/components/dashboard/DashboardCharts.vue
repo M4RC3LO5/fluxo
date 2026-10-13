@@ -1,30 +1,63 @@
 <template>
-  <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 my-4 md:my-6">
-    <div class="glass-card p-5 sm:p-6 flex-col" :class="tab === 'bar' ? 'flex' : 'max-md:hidden md:flex'">
-      <h3 class="text-sm font-semibold text-white mb-4">📊 Comparativo Previsto vs Pago</h3>
+  <div class="my-4 md:my-6">
+  <div
+    class="relative touch-pan-y"
+    data-testid="chart-swipe-area"
+    @pointerdown="onPointerDown"
+    @pointerup="onPointerUp"
+    @pointercancel="swipeStart = null"
+  >
+    <!-- celular: botão de olho (mostrar/ocultar valores) no canto superior direito do gráfico -->
+    <button
+      type="button"
+      data-testid="chart-values-toggle"
+      :aria-pressed="financeStore.showDataLabels"
+      :aria-label="financeStore.showDataLabels ? 'Ocultar valores' : 'Mostrar valores'"
+      @click="financeStore.showDataLabels = !financeStore.showDataLabels"
+      class="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-xl transition-colors md:hidden"
+      :class="financeStore.showDataLabels ? 'bg-brand-500/20 text-brand-400' : 'text-slate-400 active:bg-white/10'"
+    >
+      <svg v-if="financeStore.showDataLabels" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.9 17.9A10.4 10.4 0 0112 19C5.6 19 2 12 2 12a18 18 0 014.1-5M9.9 5.2A9.7 9.7 0 0112 5c6.4 0 10 7 10 7a18 18 0 01-2.2 3.2M3 3l18 18"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>
+    </button>
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+    <div class="glass-card p-5 max-md:pt-12 sm:p-6 flex-col" :class="tab === 'bar' ? 'flex' : 'max-md:hidden md:flex'">
+      <h3 class="max-md:hidden text-sm font-semibold text-white mb-4">📊 Comparativo Previsto vs Pago</h3>
       <div class="relative w-full h-[240px] md:h-[280px]">
         <canvas ref="barChartCanvas" data-testid="chart-bar"></canvas>
       </div>
     </div>
-    <div class="glass-card p-5 sm:p-6 flex-col" :class="tab === 'doughnut' ? 'flex' : 'max-md:hidden md:flex'">
-      <h3 class="text-sm font-semibold text-white mb-4">👤 Distribuição por Responsável</h3>
+    <div class="glass-card p-5 max-md:pt-12 sm:p-6 flex-col" :class="tab === 'doughnut' ? 'flex' : 'max-md:hidden md:flex'">
+      <h3 class="max-md:hidden text-sm font-semibold text-white mb-4">👤 Distribuição por Responsável</h3>
       <div class="relative w-full h-[240px] md:h-[280px]">
         <canvas ref="pieChartCanvas" data-testid="chart-doughnut"></canvas>
       </div>
     </div>
-    <div class="glass-card p-5 sm:p-6 flex-col" :class="tab === 'payer' ? 'flex' : 'max-md:hidden md:flex'">
-      <h3 class="text-sm font-semibold text-white mb-4">💳 Distribuição por Pagador</h3>
+    <div class="glass-card p-5 max-md:pt-12 sm:p-6 flex-col" :class="tab === 'payer' ? 'flex' : 'max-md:hidden md:flex'">
+      <h3 class="max-md:hidden text-sm font-semibold text-white mb-4">💳 Distribuição por Pagador</h3>
       <div class="relative w-full h-[240px] md:h-[280px]">
         <canvas ref="payerChartCanvas" data-testid="chart-payer"></canvas>
       </div>
     </div>
-    <div class="glass-card p-5 sm:p-6 flex-col" :class="tab === 'line' ? 'flex' : 'max-md:hidden md:flex'">
-      <h3 class="text-sm font-semibold text-white mb-4">📈 Evolução dos Vencimentos</h3>
+    <div class="glass-card p-5 max-md:pt-12 sm:p-6 flex-col" :class="tab === 'line' ? 'flex' : 'max-md:hidden md:flex'">
+      <h3 class="max-md:hidden text-sm font-semibold text-white mb-4">📈 Evolução dos Vencimentos</h3>
       <div class="relative w-full h-[240px] md:h-[280px]">
         <canvas ref="timelineChartCanvas" data-testid="chart-line"></canvas>
       </div>
     </div>
+      </div>
   </div>
+  <!-- indicador de página (celular) -->
+  <div data-testid="chart-dots" class="mt-3 flex justify-center gap-2 md:hidden" aria-hidden="true">
+    <span
+      v-for="(id, i) in TAB_ORDER"
+      :key="id"
+      class="h-2 rounded-full transition-all duration-200"
+      :class="tab === id ? 'w-5 bg-brand-500' : 'w-2 bg-white/20'"
+      :data-active="tab === id"
+    ></span>
+  </div>
+</div>
 </template>
 
 <script setup>
@@ -36,9 +69,31 @@ import { useFinanceStore } from '@/stores/financeStore.js'
 Chart.register(...registerables, ChartDataLabels)
 
 const props = defineProps({
-  // aba ativa no celular (< md): só o gráfico da aba é exibido; no desktop os 4 aparecem
+  // visão ativa no celular (< md): só o gráfico da visão é exibido; no desktop os 4 aparecem
   tab: { type: String, default: 'bar' }
 })
+const emit = defineEmits(['update:tab'])
+
+// ─── Swipe horizontal (celular): anterior/próximo ────────────────────────
+// touch-action: pan-y deixa a rolagem vertical com o navegador; só gestos horizontais chegam aqui.
+const TAB_ORDER = ['bar', 'doughnut', 'payer', 'line']
+const SWIPE_MIN = 50
+let swipeStart = null
+const isDesktopView = () => window.matchMedia('(min-width: 768px)').matches
+
+function onPointerDown(e) {
+  if (isDesktopView() || e.target.closest('button')) return
+  swipeStart = { x: e.clientX, y: e.clientY }
+}
+function onPointerUp(e) {
+  if (!swipeStart) return
+  const dx = e.clientX - swipeStart.x
+  const dy = e.clientY - swipeStart.y
+  swipeStart = null
+  if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy) * 1.5) return // curto demais ou mais vertical que horizontal
+  const i = TAB_ORDER.indexOf(props.tab) + (dx < 0 ? 1 : -1)
+  if (i >= 0 && i < TAB_ORDER.length) emit('update:tab', TAB_ORDER[i])
+}
 
 const financeStore = useFinanceStore()
 const barChartCanvas = ref(null)

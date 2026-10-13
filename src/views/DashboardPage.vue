@@ -89,36 +89,44 @@
       <section class="order-5" data-testid="charts-section">
         <div class="mb-4 md:mb-6 md:flex md:items-center md:justify-between">
           <h2 class="mb-3 text-center text-xs font-bold uppercase tracking-widest text-slate-500 md:mb-0 md:ml-24 md:flex-1">Análise de Tendências</h2>
-          <div class="flex items-center gap-2">
-            <!-- abas (celular): rolagem horizontal própria -->
-            <div role="tablist" aria-label="Gráficos" class="flex min-w-0 flex-1 gap-2 overflow-x-auto md:hidden">
-              <button
-                v-for="t in chartTabs"
-                :key="t.id"
-                type="button"
-                role="tab"
-                data-testid="chart-tab"
-                :aria-selected="chartTab === t.id"
-                @click="chartTab = t.id"
-                class="min-h-[44px] shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors"
-                :class="chartTab === t.id ? 'border-brand-500 bg-brand-600/30 text-white' : 'border-white/10 bg-white/5 text-slate-300'"
-              >{{ t.label }}</button>
+          <!-- desktop: toggle de valores no cabeçalho (celular: botão de olho dentro do gráfico) -->
+          <button
+            @click="financeStore.showDataLabels = !financeStore.showDataLabels"
+            aria-label="Valores nos Gráficos"
+            class="hidden md:flex shrink-0 items-center gap-3 rounded-xl bg-white/5 px-4 py-2 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group"
+          >
+            <span class="text-xs font-semibold text-slate-300 group-hover:text-white">Valores nos Gráficos</span>
+            <div class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+              :class="financeStore.showDataLabels ? 'bg-brand-500' : 'bg-slate-600'">
+              <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm"
+                :class="financeStore.showDataLabels ? 'translate-x-4' : 'translate-x-0.5'"></span>
             </div>
-            <button
-              @click="financeStore.showDataLabels = !financeStore.showDataLabels"
-              aria-label="Valores nos Gráficos"
-              class="flex min-h-[44px] shrink-0 items-center gap-2 md:gap-3 rounded-xl bg-white/5 px-3 md:px-4 md:py-2 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group"
-            >
-              <span class="text-xs font-semibold text-slate-300 group-hover:text-white"><span class="md:hidden">Valores</span><span class="hidden md:inline">Valores nos Gráficos</span></span>
-              <div class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
-                :class="financeStore.showDataLabels ? 'bg-brand-500' : 'bg-slate-600'">
-                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm"
-                  :class="financeStore.showDataLabels ? 'translate-x-4' : 'translate-x-0.5'"></span>
-              </div>
-            </button>
-          </div>
+          </button>
         </div>
-        <DashboardCharts :tab="chartTab" />
+
+        <!-- seletor segmentado (celular): largura total, 4 segmentos sempre visíveis -->
+        <div role="tablist" aria-label="Gráficos" class="relative grid grid-cols-4 rounded-2xl bg-white/5 p-1 md:hidden">
+          <span
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/4)] rounded-xl bg-brand-600/40 ring-1 ring-brand-500/60 transition-transform duration-200 ease-out"
+            :style="{ transform: `translateX(${chartTabIndex * 100}%)` }"
+          ></span>
+          <button
+            v-for="t in chartTabs"
+            :key="t.id"
+            type="button"
+            role="tab"
+            data-testid="chart-tab"
+            :aria-selected="chartTab === t.id"
+            @click="chartTab = t.id"
+            class="relative z-10 flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[11px] font-medium transition-colors"
+            :class="chartTab === t.id ? 'text-white' : 'text-slate-400'"
+          >
+            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true" v-html="t.icon"></svg>
+            <span class="max-w-full truncate">{{ t.label }}</span>
+          </button>
+        </div>
+        <DashboardCharts v-model:tab="chartTab" />
       </section>
 
       <!-- Breakdowns -->
@@ -291,13 +299,15 @@ const secondaryKpis = computed(() => [
 ])
 
 // ─── Gráficos em abas (celular) ───────────────────────────────────────────
+// ícones de traço (24x24, currentColor) para o seletor segmentado
 const chartTabs = [
-  { id: 'bar',      label: 'Previsto × Pago' },
-  { id: 'doughnut', label: 'Responsáveis' },
-  { id: 'payer',    label: 'Pagadores' },
-  { id: 'line',     label: 'Evolução' },
+  { id: 'bar',      label: 'Comparativo', icon: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>' },
+  { id: 'doughnut', label: 'Pessoas',     icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.5a3.5 3.5 0 010 7M18.5 14.4c1.9.8 3 2.6 3 5.6"/>' },
+  { id: 'payer',    label: 'Pagadores',   icon: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6 15h4"/>' },
+  { id: 'line',     label: 'Evolução',    icon: '<path d="M3 17l5-5 4 4 8-9M15 7h5v5"/>' },
 ]
 const chartTab = ref('bar')
+const chartTabIndex = computed(() => chartTabs.findIndex(t => t.id === chartTab.value))
 
 // ─── Rankings compactos (celular) ─────────────────────────────────────────
 // Renderiza a lista completa; o CSS recorta: no desktop até o limite original (desktopCap),
