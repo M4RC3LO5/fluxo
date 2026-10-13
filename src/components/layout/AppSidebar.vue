@@ -7,6 +7,7 @@
         v-for="item in navItems"
         :key="item.to"
         :to="item.to"
+        @click="onItemClick(item)"
         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all group"
         active-class="text-white bg-brand-600/20 border border-brand-500/20"
       >
@@ -19,8 +20,15 @@
 
 <script setup>
 import { inject } from 'vue'
+import { useRoute } from 'vue-router'
 
 const sidebarOpen = inject('sidebarOpen')
+const route = useRoute()
+
+// clicar no item da página atual: o router ignora a navegação duplicada, então rolamos ao topo aqui
+function onItemClick(item) {
+  if (route.path === item.to) window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 const navItems = [
   { to: '/dashboard',   icon: '📊', label: 'Dashboard' },

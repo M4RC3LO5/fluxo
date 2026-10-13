@@ -11,6 +11,7 @@
           :to="item.to"
           data-testid="bottom-nav-item"
           :aria-label="item.label"
+          @click="onItemClick(item)"
           class="nav-item flex h-full min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 text-slate-400"
         >
           <!-- pílula do item ativo (Material 3): ~64x32 atrás do ícone -->
@@ -26,6 +27,15 @@
 </template>
 
 <script setup>
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+// tocar no item da página atual: o router ignora a navegação duplicada, então rolamos ao topo aqui
+function onItemClick(item) {
+  if (route.path === item.to) window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 // ícones de traço (24x24, currentColor) para herdar a cor do estado (cinza / marca)
 const items = [
   { to: '/dashboard',   label: 'Dashboard',   icon: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>' },
