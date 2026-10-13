@@ -16,6 +16,10 @@
           class="kpi-card min-w-0 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all group p-3 md:p-4 sm:p-5 flex flex-col items-center text-center relative"
           :style="{ '--kpi-color': kpi.color }"
           @click="openDrillDown(kpi.type)"
+          role="button"
+          tabindex="0"
+          @keydown.enter.prevent="openDrillDown(kpi.type)"
+          @keydown.space.prevent="openDrillDown(kpi.type)"
           :title="kpi.tooltip"
         >
           <div class="relative mb-3">
@@ -39,6 +43,10 @@
             data-testid="metric-card"
             class="glass-card min-w-0 cursor-pointer p-3 md:p-4 sm:p-5 flex flex-col items-center text-center hover:bg-white/[0.08] hover:scale-[1.02] active:scale-[0.98] transition-all group"
             @click="openDrillDown(kpi.type)"
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="openDrillDown(kpi.type)"
+            @keydown.space.prevent="openDrillDown(kpi.type)"
           >
             <span class="text-2xl mb-3 block opacity-30 group-hover:opacity-100 transition-opacity">{{ kpi.icon }}</span>
             <p class="whitespace-nowrap text-lg md:text-xl font-bold text-white tracking-tight">{{ kpi.value }}</p>
@@ -55,7 +63,12 @@
             v-for="alert in smartAlerts"
             :key="alert.id"
             @click="openDrillDown(alert.id)"
-            class="glass-card cursor-pointer p-4 sm:p-5 flex items-center gap-4 hover:scale-[1.05] active:scale-[0.95] transition-all group border-l-4"
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="openDrillDown(alert.id)"
+            @keydown.space.prevent="openDrillDown(alert.id)"
+            data-testid="alert-card"
+            class="glass-card min-h-[44px] cursor-pointer p-4 sm:p-5 flex items-center gap-4 hover:scale-[1.05] active:scale-[0.95] transition-all group border-l-4"
             :class="{
               'border-l-emerald-500': alert.severity === 'success',
               'border-l-amber-500': alert.severity === 'warning',
@@ -120,7 +133,11 @@
                 data-testid="ranking-item"
                 :class="rowClass('responsibles', i, 5, 3)"
                 class="flex min-h-[44px] items-center justify-between group cursor-pointer hover:bg-white/[0.04] p-2 rounded-xl transition-colors"
-                @click="openDrillDown('responsible', item.name)">
+                @click="openDrillDown('responsible', item.name)"
+                role="button"
+                tabindex="0"
+                @keydown.enter.prevent="openDrillDown('responsible', item.name)"
+                @keydown.space.prevent="openDrillDown('responsible', item.name)">
                 <div class="flex items-center gap-4 min-w-0">
                   <div class="h-10 w-10 shrink-0 rounded-xl bg-brand-600/10 border border-brand-500/10 flex items-center justify-center text-sm font-bold text-brand-400">
                     {{ item.name.charAt(0) }}
@@ -146,6 +163,10 @@
                 data-testid="ranking-item"
                 :class="rowClass('upcoming', i, 6, 5)"
                 @click="openDrillDown('search', entry.description)"
+                role="button"
+                tabindex="0"
+                @keydown.enter.prevent="openDrillDown('search', entry.description)"
+                @keydown.space.prevent="openDrillDown('search', entry.description)"
                 class="flex min-h-[44px] items-center justify-between rounded-xl bg-white/[0.02] border border-white/5 px-4 py-3 hover:bg-white/[0.04] cursor-pointer transition-colors">
                 <div class="min-w-0">
                   <p class="text-xs font-semibold text-white truncate">{{ entry.description || '—' }}</p>
@@ -167,7 +188,11 @@
                 data-testid="ranking-item"
                 :class="rowClass('payers', i, 5, 3)"
                 class="flex min-h-[44px] items-center justify-between group cursor-pointer hover:bg-white/[0.04] p-2 rounded-xl transition-colors"
-                @click="openDrillDown('payer', item.name)">
+                @click="openDrillDown('payer', item.name)"
+                role="button"
+                tabindex="0"
+                @keydown.enter.prevent="openDrillDown('payer', item.name)"
+                @keydown.space.prevent="openDrillDown('payer', item.name)">
                 <div class="flex items-center gap-4 min-w-0">
                   <div class="h-10 w-10 shrink-0 rounded-xl bg-emerald-600/10 border border-emerald-500/10 flex items-center justify-center text-sm font-bold text-emerald-400">
                     {{ item.name.charAt(0) }}
@@ -193,6 +218,10 @@
                 data-testid="ranking-item"
                 :class="rowClass('centers', i, 6, 3)"
                 @click="openDrillDown('center', center.name)"
+                role="button"
+                tabindex="0"
+                @keydown.enter.prevent="openDrillDown('center', center.name)"
+                @keydown.space.prevent="openDrillDown('center', center.name)"
                 class="flex min-h-[44px] items-center justify-between border-b border-white/[0.03] pb-3 last:border-0 cursor-pointer hover:bg-white/[0.02] px-2 py-2 rounded-xl transition-colors">
                 <p class="text-sm font-medium text-white min-w-0 truncate mr-4">{{ center.name }}</p>
                 <div class="flex items-center gap-4 text-xs shrink-0">
