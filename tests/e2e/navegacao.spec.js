@@ -64,6 +64,56 @@ test.describe('Celular', () => {
     })
     expect(lastBottom).toBeLessThanOrEqual(navTop)
   })
+
+  test('Item ativo da barra inferior é enfatizado', async ({ page }) => {
+    await page.goto('/lancamentos')
+    const ativo = items(page).filter({ hasText: 'Lançamentos' })
+    await expect(ativo).toHaveAttribute('aria-current', 'page')
+    await expect(page.locator('[data-testid=bottom-nav-item][aria-current=page]')).toHaveCount(1)
+    await expect(page.getByTestId('page-title')).toHaveText('Lançamentos')
+    await expect(page).toHaveTitle('Lançamentos · Fluxo')
+    // pílula só no item ativo (opacidade 1) e rótulo semibold; inativos sem pílula
+    const pill = it => it.locator('.pill').evaluate(e => getComputedStyle(e).opacity)
+    await expect.poll(() => pill(ativo)).toBe('1')
+    await expect.poll(() => pill(items(page).filter({ hasText: 'Dashboard' }))).toBe('0')
+    expect(await ativo.locator('.label').evaluate(e => getComputedStyle(e).fontWeight)).toBe('600')
+  })
+
+  // Dashboard com conteúdo (fixture importada) rolado até o fim; devolve a posição
+  async function dashboardRolado(page) {
+    await importFixture(page)
+    await items(page).filter({ hasText: 'Dashboard' }).tap()
+    await expect(page.getByTestId('kpi-card').first()).toBeVisible()
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    const y = await page.evaluate(() => window.scrollY)
+    expect(y).toBeGreaterThan(500)
+    return y
+  }
+  const scrollY = page => page.evaluate(() => window.scrollY)
+
+  test('Navegar para outra página abre no topo', async ({ page }) => {
+    await dashboardRolado(page)
+    await items(page).filter({ hasText: 'Lançamentos' }).tap()
+    await expect(page).toHaveURL(/\/lancamentos$/)
+    await items(page).filter({ hasText: 'Dashboard' }).tap()
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect.poll(() => scrollY(page)).toBe(0)
+  })
+
+  test('Voltar restaura a posição anterior', async ({ page }) => {
+    const y = await dashboardRolado(page)
+    await items(page).filter({ hasText: 'Lançamentos' }).tap()
+    await expect(page).toHaveURL(/\/lancamentos$/)
+    await page.goBack()
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect.poll(async () => Math.abs((await scrollY(page)) - y), { timeout: 5000 }).toBeLessThanOrEqual(50)
+  })
+
+  test('Tocar no item ativo volta ao topo', async ({ page }) => {
+    await dashboardRolado(page)
+    await items(page).filter({ hasText: 'Dashboard' }).tap()
+    await expect.poll(() => scrollY(page), { timeout: 5000 }).toBe(0)
+  })
 })
 
 test.describe('Computador', () => {

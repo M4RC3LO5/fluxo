@@ -19,13 +19,13 @@ Funcionalidade: Dashboard no celular e drill-down
     Dado que estou em um celular
     Então a seção "Próximos Vencimentos" aparece antes da seção de gráficos
 
-  Cenário: Gráficos em abas no celular
+  Cenário: Seletor de gráficos no celular
     Dado que estou em um celular
-    Então vejo as abas "Previsto × Pago", "Responsáveis", "Pagadores" e "Evolução"
-    E apenas o gráfico "Previsto × Pago" está visível
-    Quando toco na aba "Responsáveis"
+    Então vejo os 4 segmentos "Comparativo", "Pessoas", "Pagadores" e "Evolução" sem rolagem
+    E apenas o gráfico "Comparativo" está visível
+    Quando toco no segmento "Pessoas"
     Então o gráfico de rosca está visível com 3 fatias
-    E o gráfico "Previsto × Pago" não está visível
+    E o gráfico "Comparativo" não está visível
 
   Cenário: Ranking mostra os 3 primeiros e expande
     Dado que estou em um celular
@@ -58,3 +58,15 @@ Funcionalidade: Dashboard no celular e drill-down
     Dado que estou em um computador
     Então os 4 gráficos estão visíveis ao mesmo tempo
     E não vejo abas de gráfico
+
+  Cenário: Arrastar o gráfico troca de visão
+    Dado que estou em um celular
+    Quando arrasto o gráfico para a esquerda
+    Então o segmento "Pessoas" está ativo
+    Quando arrasto o gráfico para a direita
+    Então o segmento "Comparativo" está ativo
+
+  Cenário: Botão de olho mostra os valores no gráfico
+    Dado que estou em um celular
+    Quando toco no botão "Mostrar valores"
+    Então o botão "Ocultar valores" está pressionado

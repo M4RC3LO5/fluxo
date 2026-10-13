@@ -68,7 +68,7 @@ test('dashboard renderiza os 4 gráficos completos, sem erros de console', async
   else await page.getByRole('link', { name: /Dashboard/ }).first().click()
 
   if (isMobile) {
-    const abas = ['Previsto × Pago', 'Responsáveis', 'Pagadores', 'Evolução']
+    const abas = ['Comparativo', 'Pessoas', 'Pagadores', 'Evolução']
     const ids = ['chart-bar', 'chart-doughnut', 'chart-payer', 'chart-line']
     for (const [i, nome] of abas.entries()) {
       await page.getByTestId('chart-tab').filter({ hasText: nome }).tap()

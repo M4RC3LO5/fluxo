@@ -44,21 +44,69 @@ test.describe('Celular', () => {
     expect(prox.y).toBeLessThan(graficos.y)
   })
 
-  test('Gráficos em abas no celular', async ({ page }) => {
-    const abas = page.getByTestId('chart-tab')
-    await expect(abas).toHaveText(['Previsto × Pago', 'Responsáveis', 'Pagadores', 'Evolução'])
+  test('Seletor de gráficos no celular', async ({ page }) => {
+    const segs = page.getByTestId('chart-tab')
+    await expect(segs).toHaveText(['Comparativo', 'Pessoas', 'Pagadores', 'Evolução'])
+    // 4 segmentos sempre visíveis, sem rolagem: dentro da viewport e sem overflow do contêiner
+    const vw = page.viewportSize().width
+    for (const seg of await segs.all()) {
+      const b = await seg.boundingBox()
+      expect(b.x).toBeGreaterThanOrEqual(0)
+      expect(b.x + b.width).toBeLessThanOrEqual(vw)
+    }
+    const { sw, cw } = await page.getByRole('tablist', { name: 'Gráficos' }).evaluate(e => ({ sw: e.scrollWidth, cw: e.clientWidth }))
+    expect(sw).toBeLessThanOrEqual(cw)
+    await expect(segs.first()).toHaveAttribute('aria-selected', 'true')
+
     await expect(page.getByTestId('chart-bar')).toBeVisible()
     for (const id of ['chart-doughnut', 'chart-payer', 'chart-line']) await expect(page.getByTestId(id)).toBeHidden()
 
-    await abas.filter({ hasText: 'Responsáveis' }).tap()
-    const canvas = page.getByTestId('chart-doughnut')
-    await expect(canvas).toBeVisible()
+    await segs.filter({ hasText: 'Pessoas' }).tap()
+    await expect(page.getByTestId('chart-doughnut')).toBeVisible()
     await expect(page.getByTestId('chart-bar')).toBeHidden()
     await expect.poll(() => page.evaluate(async () => {
       const { Chart } = await import('/node_modules/.vite/deps/chart__js.js')
       const ch = Chart.getChart(document.querySelector('[data-testid="chart-doughnut"]'))
       return ch.getDatasetMeta(0).data.length
     })).toBe(3)
+    // título duplicado removido no celular e indicador de 4 pontos
+    await expect(page.getByTestId('charts-section').getByRole('heading', { name: /Distribuição por Responsável/ })).toBeHidden()
+    await expect(page.getByTestId('chart-dots').locator('span')).toHaveCount(4)
+    await expect(page.getByTestId('chart-dots').locator('[data-active="true"]')).toHaveCount(1)
+  })
+
+  // arrasto horizontal com ponteiro (mouse emulado) sobre o gráfico visível
+  async function arrastar(page, direcao) {
+    const area = await page.getByTestId('chart-swipe-area').boundingBox()
+    const y = area.y + area.height / 2
+    const [de, ate] = direcao === 'esquerda' ? [area.x + area.width * 0.75, area.x + area.width * 0.25] : [area.x + area.width * 0.25, area.x + area.width * 0.75]
+    await page.mouse.move(de, y)
+    await page.mouse.down()
+    await page.mouse.move(ate, y, { steps: 8 })
+    await page.mouse.up()
+  }
+  const ativo = (page, nome) => page.getByTestId('chart-tab').filter({ hasText: nome })
+
+  test('Arrastar o gráfico troca de visão', async ({ page }) => {
+    await page.getByTestId('charts-section').scrollIntoViewIfNeeded()
+    await arrastar(page, 'esquerda')
+    await expect(ativo(page, 'Pessoas')).toHaveAttribute('aria-selected', 'true')
+    await arrastar(page, 'direita')
+    await expect(ativo(page, 'Comparativo')).toHaveAttribute('aria-selected', 'true')
+    // limites: arrastar para a direita na primeira visão não faz nada
+    await arrastar(page, 'direita')
+    await expect(ativo(page, 'Comparativo')).toHaveAttribute('aria-selected', 'true')
+  })
+
+  test('Botão de olho mostra os valores no gráfico', async ({ page }) => {
+    const botao = page.getByTestId('chart-values-toggle')
+    await expect(botao).toHaveAttribute('aria-pressed', 'false')
+    const box = await botao.boundingBox()
+    expect(box.width).toBeGreaterThanOrEqual(44)
+    expect(box.height).toBeGreaterThanOrEqual(44)
+    await page.getByRole('button', { name: 'Mostrar valores' }).tap()
+    const ocultar = page.getByRole('button', { name: 'Ocultar valores' })
+    await expect(ocultar).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('Ranking mostra os 3 primeiros e expande', async ({ page }) => {

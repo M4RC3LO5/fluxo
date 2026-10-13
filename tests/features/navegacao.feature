@@ -52,3 +52,33 @@ Funcionalidade: Navegação mobile first
     Quando abro a página "Dashboard"
     Então vejo a barra lateral
     E a barra de navegação inferior não está visível
+
+  Cenário: Item ativo da barra inferior é enfatizado
+    Dado que acesso o app em um celular
+    Quando abro a página "Lançamentos"
+    Então o item "Lançamentos" da barra inferior tem aria-current "page"
+    E apenas um item da barra inferior está ativo
+    E o topo exibe o título "Lançamentos"
+
+  Cenário: Navegar para outra página abre no topo
+    Dado que acesso o app em um celular
+    E importei o arquivo "tests/fixtures/fluxo_exemplo.xlsx"
+    E estou na página "Dashboard" rolada até o fim
+    Quando toco no item "Lançamentos" da barra inferior
+    E toco no item "Dashboard" da barra inferior
+    Então a página está no topo
+
+  Cenário: Voltar restaura a posição anterior
+    Dado que acesso o app em um celular
+    E importei o arquivo "tests/fixtures/fluxo_exemplo.xlsx"
+    E estou na página "Dashboard" rolada até o fim
+    Quando toco no item "Lançamentos" da barra inferior
+    E uso o botão voltar do navegador
+    Então a página "Dashboard" volta para a posição em que eu estava
+
+  Cenário: Tocar no item ativo volta ao topo
+    Dado que acesso o app em um celular
+    E importei o arquivo "tests/fixtures/fluxo_exemplo.xlsx"
+    E estou na página "Dashboard" rolada até o fim
+    Quando toco no item "Dashboard" da barra inferior
+    Então a página está no topo
