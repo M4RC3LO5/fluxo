@@ -7,7 +7,9 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
-      <span class="text-white font-bold text-lg tracking-tight">Fluxo</span>
+      <!-- celular: nome da página atual; desktop: marca -->
+      <span data-testid="page-title" class="truncate text-white font-bold text-lg tracking-tight md:hidden">{{ pageTitle }}</span>
+      <span class="hidden text-white font-bold text-lg tracking-tight md:inline">Fluxo</span>
     </div>
     <div class="flex items-center gap-2">
       <span class="text-xs text-slate-500 whitespace-nowrap">{{ currentDate }}</span>
@@ -16,9 +18,12 @@
 </template>
 
 <script setup>
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
+import { useRoute } from 'vue-router'
 
 const sidebarOpen = inject('sidebarOpen')
+const route = useRoute()
+const pageTitle = computed(() => route.meta?.title || 'Fluxo')
 
 function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value

@@ -11,12 +11,14 @@
           :to="item.to"
           data-testid="bottom-nav-item"
           :aria-label="item.label"
-          class="relative flex h-full min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 text-slate-400 transition-colors active:bg-white/[0.06]"
-          active-class="!text-white"
+          class="nav-item flex h-full min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 text-slate-400"
         >
-          <span class="indicator absolute top-0 h-0.5 w-8 rounded-full bg-brand-500 opacity-0 transition-opacity"></span>
-          <span class="text-xl leading-none" aria-hidden="true">{{ item.icon }}</span>
-          <span class="text-[11px] font-medium leading-none truncate max-w-full px-1">{{ item.label }}</span>
+          <!-- pílula do item ativo (Material 3): ~64x32 atrás do ícone -->
+          <span class="relative flex h-8 w-16 items-center justify-center">
+            <span class="pill absolute inset-0 rounded-full bg-brand-500/20"></span>
+            <svg class="relative h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true" v-html="item.icon"></svg>
+          </span>
+          <span class="label max-w-full truncate px-1 text-[11px] font-medium leading-none">{{ item.label }}</span>
         </router-link>
       </li>
     </ul>
@@ -24,14 +26,25 @@
 </template>
 
 <script setup>
+// ícones de traço (24x24, currentColor) para herdar a cor do estado (cinza / marca)
 const items = [
-  { to: '/dashboard',   icon: '📊', label: 'Dashboard' },
-  { to: '/lancamentos', icon: '📋', label: 'Lançamentos' },
-  { to: '/importacoes', icon: '📥', label: 'Importar' },
-  { to: '/versoes',     icon: '🗂️', label: 'Versões' },
+  { to: '/dashboard',   label: 'Dashboard',   icon: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>' },
+  { to: '/lancamentos', label: 'Lançamentos', icon: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>' },
+  { to: '/importacoes', label: 'Importar',    icon: '<path d="M12 3v12M7 10l5 5 5-5M4 17v2.5A1.5 1.5 0 005.5 21h13a1.5 1.5 0 001.5-1.5V17"/>' },
+  { to: '/versoes',     label: 'Versões',     icon: '<path d="M12 3l9 4.5-9 4.5-9-4.5L12 3zM3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5"/>' },
 ]
 </script>
 
 <style scoped>
-.router-link-active .indicator { opacity: 1; }
+.pill {
+  opacity: 0;
+  transform: scaleX(0.4);
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+.nav-item { transition: color 0.2s ease; }
+.nav-item .label { transition: color 0.2s ease; }
+/* ativo: pílula + ícone e rótulo na cor da marca, rótulo semibold */
+.nav-item.router-link-active { color: var(--color-brand-400); }
+.nav-item.router-link-active .pill { opacity: 1; transform: scaleX(1); }
+.nav-item.router-link-active .label { font-weight: 600; }
 </style>
