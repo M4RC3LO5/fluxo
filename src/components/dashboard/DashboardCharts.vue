@@ -1,27 +1,27 @@
 <template>
-  <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 my-6">
-    <div class="glass-card p-5 sm:p-6 flex flex-col">
+  <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 my-4 md:my-6">
+    <div class="glass-card p-5 sm:p-6 flex-col" :class="tab === 'bar' ? 'flex' : 'max-md:hidden md:flex'">
       <h3 class="text-sm font-semibold text-white mb-4">📊 Comparativo Previsto vs Pago</h3>
-      <div class="relative w-full h-[280px]">
-        <canvas ref="barChartCanvas"></canvas>
+      <div class="relative w-full h-[240px] md:h-[280px]">
+        <canvas ref="barChartCanvas" data-testid="chart-bar"></canvas>
       </div>
     </div>
-    <div class="glass-card p-5 sm:p-6 flex flex-col">
+    <div class="glass-card p-5 sm:p-6 flex-col" :class="tab === 'doughnut' ? 'flex' : 'max-md:hidden md:flex'">
       <h3 class="text-sm font-semibold text-white mb-4">👤 Distribuição por Responsável</h3>
-      <div class="relative w-full h-[280px]">
-        <canvas ref="pieChartCanvas"></canvas>
+      <div class="relative w-full h-[240px] md:h-[280px]">
+        <canvas ref="pieChartCanvas" data-testid="chart-doughnut"></canvas>
       </div>
     </div>
-    <div class="glass-card p-5 sm:p-6 flex flex-col">
+    <div class="glass-card p-5 sm:p-6 flex-col" :class="tab === 'payer' ? 'flex' : 'max-md:hidden md:flex'">
       <h3 class="text-sm font-semibold text-white mb-4">💳 Distribuição por Pagador</h3>
-      <div class="relative w-full h-[280px]">
-        <canvas ref="payerChartCanvas"></canvas>
+      <div class="relative w-full h-[240px] md:h-[280px]">
+        <canvas ref="payerChartCanvas" data-testid="chart-payer"></canvas>
       </div>
     </div>
-    <div class="glass-card p-5 sm:p-6 flex flex-col">
+    <div class="glass-card p-5 sm:p-6 flex-col" :class="tab === 'line' ? 'flex' : 'max-md:hidden md:flex'">
       <h3 class="text-sm font-semibold text-white mb-4">📈 Evolução dos Vencimentos</h3>
-      <div class="relative w-full h-[280px]">
-        <canvas ref="timelineChartCanvas"></canvas>
+      <div class="relative w-full h-[240px] md:h-[280px]">
+        <canvas ref="timelineChartCanvas" data-testid="chart-line"></canvas>
       </div>
     </div>
   </div>
@@ -34,6 +34,11 @@ import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { useFinanceStore } from '@/stores/financeStore.js'
 
 Chart.register(...registerables, ChartDataLabels)
+
+const props = defineProps({
+  // aba ativa no celular (< md): só o gráfico da aba é exibido; no desktop os 4 aparecem
+  tab: { type: String, default: 'bar' }
+})
 
 const financeStore = useFinanceStore()
 const barChartCanvas = ref(null)
@@ -155,6 +160,11 @@ async function refreshCharts() {
 
 onMounted(refreshCharts)
 watch(() => financeStore.entries, refreshCharts)
+// gráficos em contêiner oculto (display:none) ficam com tamanho 0; ao exibir a aba, recalcula o tamanho
+watch(() => props.tab, async () => {
+  await nextTick()
+  ;[barChart, pieChart, payerChart, timelineChart].forEach(ch => ch?.resize())
+})
 watch(() => financeStore.showDataLabels, () => {
   if (barChart) barChart.update()
   if (pieChart) pieChart.update()
