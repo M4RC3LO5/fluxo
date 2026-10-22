@@ -16,6 +16,8 @@ export async function dropFile(page, selector, path, { drop = true } = {}) {
   const name = basename(path)
   const ext = name.slice(name.lastIndexOf('.')).toLowerCase()
   const base64 = readFileSync(path).toString('base64')
+  await page.waitForSelector(selector, { state: 'attached' }) // o app monta só depois de hidratar o storage
+  await page.waitForLoadState('networkidle') // e a rota (lazy) registra os listeners de drop ao montar
   await page.evaluate(({ selector, name, type, base64, drop }) => {
     const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
     const dt = new DataTransfer()

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { KEYS, load, save, debounced } from '@/modules/persistence/storage.js'
 import { today } from '@/utils/formatters.js'
 import { buildSearchIndex, matches } from '@/utils/search.js'
 
@@ -101,8 +102,18 @@ export const useFinanceStore = defineStore('finance', () => {
     entries.value = data
   }
 
+  const persist = debounced(() => save(KEYS.entries, entries.value))
+  watch(entries, persist, { deep: true })
+
+  // limpar grava na hora, sem esperar o debounce
   function clearEntries() {
     entries.value = []
+    return persist.flush()
+  }
+
+  async function hydrate() {
+    const saved = await load(KEYS.entries)
+    if (Array.isArray(saved)) entries.value = saved
   }
 
   return {
@@ -111,6 +122,6 @@ export const useFinanceStore = defineStore('finance', () => {
     forecastVsPaidDiff, paidCount, pendingCount,
     totalByResponsible, totalByPayer, totalByCenter, upcomingDue,
     filteredEntries,
-    setEntries, clearEntries
+    setEntries, clearEntries, hydrate
   }
 })

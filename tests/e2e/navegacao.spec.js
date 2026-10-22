@@ -55,6 +55,7 @@ test.describe('Celular', () => {
 
   test('Conteúdo não fica escondido atrás da barra inferior', async ({ page }) => {
     await page.goto('/importacoes')
+    await page.waitForLoadState('networkidle') // app monta após hidratar o storage; rola só com a página pronta
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
     const { lastBottom, navTop } = await page.evaluate(() => {
       const root = document.querySelector('main')
