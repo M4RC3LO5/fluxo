@@ -22,3 +22,12 @@ Funcionalidade: Normalização de lançamentos
   Cenário: Planilha antiga sem coluna Categoria
     Dado que importei fluxo_exemplo.xlsx
     Então os lançamentos aparecem como "Sem categoria"
+
+  Cenário: Selo neutro para tipo desconhecido
+    Dado que importei uma planilha sem coluna Tipo (fluxo_sem_tipo.xlsx)
+    Então lançamentos sem tipo mostram o selo "—"
+
+  Cenário: Busca por categoria
+    Dado que importei fluxo_categorias.xlsx
+    Quando busco pelo nome de uma categoria
+    Então só aparecem lançamentos dessa categoria

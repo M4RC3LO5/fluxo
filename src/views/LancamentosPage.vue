@@ -246,10 +246,11 @@
               <!-- Tipo -->
               <td class="px-4 py-3 whitespace-nowrap">
                 <span
-                  :class="entry.type === 'in' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'"
+                  data-testid="type-badge"
+                  :class="typeBadge(entry.type).cls"
                   class="text-xs px-2 py-1 rounded-lg font-medium"
                 >
-                  {{ entry.type === 'in' ? 'Receita' : 'Despesa' }}
+                  {{ typeBadge(entry.type).label }}
                 </span>
               </td>
             </tr>
@@ -315,6 +316,7 @@
 import { computed, ref, watch, onUnmounted } from 'vue'
 import { useFinanceStore } from '@/stores/financeStore'
 import { today } from '@/utils/formatters.js'
+import { typeBadge } from '@/utils/entryType.js'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import LancamentoCard from '@/components/lancamentos/LancamentoCard.vue'
 import LancamentoDetail from '@/components/lancamentos/LancamentoDetail.vue'

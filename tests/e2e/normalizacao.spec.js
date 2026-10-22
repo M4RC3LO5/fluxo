@@ -1,17 +1,19 @@
 import { test, expect } from '@playwright/test'
 import { importFixture, FIXED_NOW } from './helpers/importFixture.js'
 import { waitAppReady } from './helpers/appReady.js'
-import { abrirLancamentos, rows, openDetail, detailField, closeDetail } from './helpers/lancamentos.js'
+import { abrirLancamentos, rows, openDetail, detailField, closeDetail, search } from './helpers/lancamentos.js'
 
 const FIXTURE_CATEGORIAS = 'tests/fixtures/fluxo_categorias.xlsx'
 
-async function importCategorias(page) {
+async function importPlanilha(page, arquivo, registros) {
   await page.clock.setFixedTime(FIXED_NOW)
   await page.goto('/importacoes')
-  await page.locator('[data-testid="source-input-xlsx"]').setInputFiles(FIXTURE_CATEGORIAS)
-  await expect(page.getByText('5 registros importados')).toBeVisible()
+  await page.locator('[data-testid="source-input-xlsx"]').setInputFiles(arquivo)
+  await expect(page.getByText(`${registros} registros importados`)).toBeVisible()
   await abrirLancamentos(page)
 }
+const importCategorias = page => importPlanilha(page, FIXTURE_CATEGORIAS, 5)
+const selo = (page, descricao) => rows(page).filter({ hasText: descricao }).getByTestId('type-badge')
 
 test('Categoria e centro de custo separados', async ({ page }) => {
   await importCategorias(page)
@@ -34,6 +36,29 @@ test('Planilha antiga sem coluna Categoria', async ({ page }) => {
   await abrirLancamentos(page)
   await openDetail(page, 'Recebimento cliente A')
   await expect(detailField(page, 'Categoria')).toHaveText('Sem categoria')
+})
+
+test('Selos de tipo: Entrada, Saída e neutro', async ({ page }) => {
+  await importCategorias(page)
+  await expect(selo(page, 'Venda projeto Alfa')).toHaveText('Entrada')
+  await expect(selo(page, 'Aluguel escritório - Novembro')).toHaveText('Saída')
+})
+
+test('Selo neutro para tipo desconhecido', async ({ page }) => {
+  await importPlanilha(page, 'tests/fixtures/fluxo_sem_tipo.xlsx', 2)
+  await expect(rows(page)).toHaveCount(2)
+  await expect(rows(page).getByTestId('type-badge')).toHaveText(['—', '—'])
+  await search(page, 'despesa') // tipo desconhecido não é indexado como despesa
+  await expect(rows(page)).toHaveCount(0)
+})
+
+test('Busca por categoria', async ({ page }) => {
+  await importCategorias(page)
+  await search(page, 'Publicidade')
+  await expect(rows(page)).toHaveCount(1)
+  await expect(rows(page).first()).toContainText('Marketing digital')
+  await search(page, 'saida') // sem acento também encontra as despesas
+  await expect(rows(page)).toHaveCount(3)
 })
 
 /** Acesso direto ao IndexedDB do app (idb-keyval: banco "fluxo", store "kv"). */
