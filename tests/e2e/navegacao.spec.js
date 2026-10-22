@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { importFixture } from './helpers/importFixture.js'
+import { waitAppReady } from './helpers/appReady.js'
 
 const bottomNav = page => page.getByTestId('bottom-nav')
 const items = page => page.getByTestId('bottom-nav-item')
@@ -47,7 +48,7 @@ test.describe('Celular', () => {
       } else {
         await page.goto(rota)
       }
-      await page.waitForLoadState('networkidle')
+      await waitAppReady(page)
       const { sw, iw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }))
       expect(sw).toBeLessThanOrEqual(iw)
     })
@@ -55,7 +56,7 @@ test.describe('Celular', () => {
 
   test('Conteúdo não fica escondido atrás da barra inferior', async ({ page }) => {
     await page.goto('/importacoes')
-    await page.waitForLoadState('networkidle') // app monta após hidratar o storage; rola só com a página pronta
+    await waitAppReady(page) // rola só com a página pronta
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
     const { lastBottom, navTop } = await page.evaluate(() => {
       const root = document.querySelector('main')
