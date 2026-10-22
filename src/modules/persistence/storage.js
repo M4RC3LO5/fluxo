@@ -1,13 +1,38 @@
-import { get, set, clear, createStore } from 'idb-keyval'
+import { get, set, setMany, clear, createStore } from 'idb-keyval'
 import { toRaw } from 'vue'
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 export const KEYS = {
   schema: 'fluxo:schema',
   entries: 'fluxo:finance:entries',
   history: 'fluxo:import:history',
   activeVersionId: 'fluxo:import:activeVersionId'
+}
+
+/**
+ * Migrações por versão de destino, aplicadas em sequência. Cada uma recebe um objeto
+ * { [chave]: valor } com todos os dados salvos e devolve o objeto migrado.
+ */
+export const MIGRATIONS = {
+  // v1 → v2: modelo canônico (category, type 'in'/'out', source, importId).
+  // Não copia center para category: no v1 não dá para saber a origem da coluna.
+  2: (data) => {
+    const entries = data[KEYS.entries]
+    if (!Array.isArray(entries)) return data
+    // no v1 'despesa' era também o valor padrão sem coluna Tipo; só 'receita' era explícito
+    const type = (t) => (t === 'in' || t === 'out' ? t : t === 'receita' ? 'in' : null)
+    return {
+      ...data,
+      [KEYS.entries]: entries.map(e => ({
+        ...e,
+        category: e.category ?? null,
+        type: type(e.type),
+        source: e.source ?? 'xlsx',
+        importId: e.importId ?? null
+      }))
+    }
+  }
 }
 
 let store = null
@@ -19,17 +44,38 @@ const getStore = () => (store ??= createStore('fluxo', 'kv'))
 // Clone puro: nunca grava proxy reativo no IndexedDB
 const plain = (value) => JSON.parse(JSON.stringify(toRaw(value)))
 
+async function migrate(s, from) {
+  let data = {}
+  for (const key of Object.values(KEYS)) {
+    if (key === KEYS.schema) continue
+    const value = await get(key, s)
+    if (value !== undefined) data[key] = value
+  }
+  for (let v = from + 1; v <= SCHEMA_VERSION; v++) data = MIGRATIONS[v](data)
+  // dados migrados e novo schema gravados juntos (transação única)
+  await setMany([...Object.entries(data), [KEYS.schema, SCHEMA_VERSION]], s)
+}
+
 function checkSchema() {
   schemaChecked ??= (async () => {
     try {
-      const stored = await get(KEYS.schema, getStore())
-      if (stored !== undefined && stored !== SCHEMA_VERSION) {
-        // migrações virão depois: não carrega nem sobrescreve dados de outra versão
+      const s = getStore()
+      const stored = await get(KEYS.schema, s)
+      if (stored === undefined || stored === SCHEMA_VERSION) return true
+      if (typeof stored !== 'number' || stored > SCHEMA_VERSION) {
+        // salvo por versão mais nova: não carrega nem sobrescreve
         console.warn(`[fluxo] schema salvo (${stored}) difere de ${SCHEMA_VERSION}; dados locais ignorados.`)
         writable = false
         return false
       }
-      return true
+      try {
+        await migrate(s, stored)
+        return true
+      } catch (err) {
+        console.warn(`[fluxo] falha ao migrar schema ${stored} → ${SCHEMA_VERSION}; seguindo só em memória.`, err)
+        writable = false
+        return false
+      }
     } catch (err) {
       console.warn('[fluxo] IndexedDB indisponível; seguindo só em memória.', err)
       writable = false
