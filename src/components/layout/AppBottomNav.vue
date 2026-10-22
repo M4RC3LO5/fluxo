@@ -41,7 +41,6 @@ const items = [
   { to: '/dashboard',   label: 'Dashboard',   icon: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>' },
   { to: '/lancamentos', label: 'Lançamentos', icon: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>' },
   { to: '/importacoes', label: 'Importar',    icon: '<path d="M12 3v12M7 10l5 5 5-5M4 17v2.5A1.5 1.5 0 005.5 21h13a1.5 1.5 0 001.5-1.5V17"/>' },
-  { to: '/versoes',     label: 'Versões',     icon: '<path d="M12 3l9 4.5-9 4.5-9-4.5L12 3zM3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5"/>' },
 ]
 </script>
 

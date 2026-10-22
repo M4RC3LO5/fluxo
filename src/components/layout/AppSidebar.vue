@@ -34,6 +34,5 @@ const navItems = [
   { to: '/dashboard',   icon: '📊', label: 'Dashboard' },
   { to: '/lancamentos', icon: '📋', label: 'Lançamentos' },
   { to: '/importacoes', icon: '📥', label: 'Importações' },
-  { to: '/versoes',     icon: '🗂️',  label: 'Versões' },
 ]
 </script>

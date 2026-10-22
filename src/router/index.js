@@ -26,9 +26,7 @@ const routes = [
   },
   {
     path: '/versoes',
-    name: 'Versoes',
-    meta: { title: 'Versões' },
-    component: () => import('@/views/VersoesPage.vue')
+    redirect: '/importacoes'
   }
 ]
 
