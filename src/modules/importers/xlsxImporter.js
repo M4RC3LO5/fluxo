@@ -95,11 +95,6 @@ function normalizeStatus(raw) {
   return 'pending'
 }
 
-let _idCounter = Date.now()
-function nextId() {
-  return `imp_${_idCounter++}`
-}
-
 export async function parseXlsx(file, { importId = null } = {}) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -183,7 +178,7 @@ export async function parseXlsx(file, { importId = null } = {}) {
           const notes = String(get('notes') || '').trim()
 
           entries.push(normalizeEntry({
-            id: nextId(),
+            id: crypto.randomUUID(),
             dueDate,
             description,
             forecast,

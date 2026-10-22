@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { KEYS, load, save, debounced } from '@/modules/persistence/storage.js'
 import { today } from '@/utils/formatters.js'
 import { buildSearchIndex, matches } from '@/utils/search.js'
+import { dedupKey } from '@/modules/importers/dedup.js'
 
 export const useFinanceStore = defineStore('finance', () => {
   const entries = ref([])
@@ -98,8 +99,12 @@ export const useFinanceStore = defineStore('finance', () => {
   })
 
   // ─── Actions ──────────────────────────────────────────────────────────
-  function setEntries(data) {
-    entries.value = data
+  // soma ao livro-caixa; ignora quem já existe nos dados anteriores (repetição dentro do mesmo lote entra)
+  function addEntries(list) {
+    const existing = new Set(entries.value.map(dedupKey))
+    const fresh = list.filter(e => !existing.has(dedupKey(e)))
+    entries.value = [...entries.value, ...fresh]
+    return { added: fresh.length, skipped: list.length - fresh.length }
   }
 
   const persist = debounced(() => save(KEYS.entries, entries.value))
@@ -108,6 +113,11 @@ export const useFinanceStore = defineStore('finance', () => {
   // limpar grava na hora, sem esperar o debounce
   function clearEntries() {
     entries.value = []
+    return persist.flush()
+  }
+
+  function removeByImport(importId) {
+    entries.value = entries.value.filter(e => e.importId !== importId)
     return persist.flush()
   }
 
@@ -122,6 +132,6 @@ export const useFinanceStore = defineStore('finance', () => {
     forecastVsPaidDiff, paidCount, pendingCount,
     totalByResponsible, totalByPayer, totalByCenter, upcomingDue,
     filteredEntries,
-    setEntries, clearEntries, hydrate
+    addEntries, removeByImport, clearEntries, hydrate
   }
 })

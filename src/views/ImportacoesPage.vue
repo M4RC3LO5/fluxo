@@ -93,8 +93,8 @@
         <div class="flex items-start gap-4">
           <span class="mt-0.5 text-2xl">✅</span>
           <div class="min-w-0">
-            <p class="text-sm font-bold text-white">{{ importResult.count }} registros importados com sucesso</p>
-            <p class="mt-1 break-words text-xs text-slate-400">Versão: <span class="font-semibold text-slate-200">{{ importResult.versionName }}</span></p>
+            <p class="text-sm font-bold text-white">{{ importResult.added }} lançamentos importados<template v-if="importResult.skipped > 0"> · {{ importResult.skipped }} duplicatas ignoradas</template></p>
+            <p class="mt-1 break-words text-xs text-slate-400">Arquivo: <span class="font-semibold text-slate-200">{{ importResult.fileName }}</span></p>
           </div>
         </div>
         <ul v-if="importResult.warnings.length" class="space-y-1 text-xs text-amber-300">
@@ -114,28 +114,22 @@
         <div
           v-for="record in importStore.history"
           :key="record.id"
+          data-testid="history-row"
           class="glass-card p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 hover:bg-white/[0.03] transition-colors"
         >
           <div class="flex items-center gap-4 min-w-0">
             <span class="text-2xl shrink-0">{{ getSourceIcon(record.source) }}</span>
             <div class="min-w-0">
-              <p class="text-sm font-semibold text-white truncate">{{ record.versionName || record.fileName }}</p>
+              <p class="text-sm font-semibold text-white truncate">{{ record.fileName }}</p>
               <p class="text-[11px] text-slate-500 mt-0.5 break-words">
-                {{ record.source?.toUpperCase() }} · {{ record.count }} registros · {{ formatImportDate(record.importedAt) }}
+                {{ record.source?.toUpperCase() }} · {{ formatImportDate(record.importedAt) }}
               </p>
             </div>
           </div>
-          <div class="flex items-center gap-2 sm:shrink-0">
-            <button
-              @click="activateVersion(record)"
-              class="flex-1 sm:flex-none min-h-[44px] md:min-h-0 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
-              :class="importStore.activeVersion?.id === record.id
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'"
-            >
-              {{ importStore.activeVersion?.id === record.id ? '✓ Ativa' : 'Ativar' }}
-            </button>
-            <button @click="removeRecord(record.id)" aria-label="Remover importação" class="flex h-11 w-11 md:h-auto md:w-auto items-center justify-center md:p-1.5 text-slate-600 hover:text-red-400 rounded-lg hover:bg-white/5 transition-all">
+          <div class="flex items-center gap-3 sm:shrink-0">
+            <span class="text-xs font-semibold text-emerald-400">+{{ record.count }}</span>
+            <span v-if="record.skipped > 0" class="text-xs text-slate-500">{{ record.skipped }} ignoradas</span>
+            <button @click="askRemove(record)" aria-label="Remover importação" class="ml-auto flex h-11 w-11 md:h-auto md:w-auto items-center justify-center md:p-1.5 text-slate-600 hover:text-red-400 rounded-lg hover:bg-white/5 transition-all">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
               </svg>
@@ -144,6 +138,13 @@
         </div>
       </div>
     </section>
+
+  <BottomSheet :open="!!removing" :title="`Remover importação e ${removingCount} lançamentos?`" :subtitle="removing?.fileName" @close="removing = null">
+    <div class="flex flex-col gap-3 sm:flex-row-reverse">
+      <button type="button" data-testid="confirm-remove" class="flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-red-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-red-500" @click="confirmRemove">Remover</button>
+      <button type="button" data-testid="cancel-remove" class="flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-white/10 px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/5" @click="removing = null">Cancelar</button>
+    </div>
+  </BottomSheet>
 
   <!-- Overlay de drag & drop na página (desktop); visual apenas, os cards abaixo continuam recebendo o drop -->
   <div
@@ -157,10 +158,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useFinanceStore } from '@/stores/financeStore.js'
 import { useImportStore } from '@/stores/importStore.js'
-import { parseXlsx } from '@/modules/importers/xlsxImporter.js'
+import { runImport, deleteImport } from '@/modules/importers/importService.js'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
 
 const financeStore = useFinanceStore()
 const importStore  = useImportStore()
@@ -173,7 +175,6 @@ const importSources = [
   { id: 'mercadopago', icon: '💙', name: 'Mercado Pago',   description: 'Extrato CSV do Mercado Pago',                badge: 'CSV',  ext: '.csv',  available: false },
   { id: 'santander',   icon: '🔴', name: 'Santander',      description: 'Extrato PDF — processamento via IA',         badge: 'PDF',  ext: '.pdf',  available: false },
 ]
-const parsers = { xlsx: parseXlsx }
 
 const inputRefs = reactive({})
 const importingId = ref(null)
@@ -214,17 +215,8 @@ async function processFile(source, file) {
 
   importingId.value = source.id
   try {
-    const { entries, warnings } = await parsers[source.id](file)
-    const versionName = file.name.replace(/\.[^.]+$/, '')
-    financeStore.setEntries(entries)
-    importStore.addImport({
-      source:      source.id,
-      fileName:    file.name,
-      versionName,
-      description: '', // edição de nome/descrição passa para a tela de Versões
-      count:       entries.length,
-    })
-    importResult.value = { count: entries.length, versionName, warnings: warnings || [] }
+    const { added, skipped, warnings } = await runImport(file, source.id)
+    importResult.value = { added, skipped, fileName: file.name, warnings }
   } catch (err) {
     importError.value = err.message || 'Não foi possível ler o arquivo. Verifique se está no formato correto.'
   } finally {
@@ -314,14 +306,17 @@ function formatImportDate(iso) {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-function activateVersion(record) {
-  importStore.activeVersion = record
+// remover pede confirmação (BottomSheet): apaga a importação e só os lançamentos dela
+const removing = ref(null)
+const removingCount = computed(() =>
+  removing.value ? financeStore.entries.filter(e => e.importId === removing.value.id).length : 0)
+
+function askRemove(record) {
+  removing.value = record
 }
 
-function removeRecord(id) {
-  importStore.removeImport(id)
-  if (financeStore.entries.length > 0 && !importStore.activeVersion) {
-    financeStore.clearEntries()
-  }
+function confirmRemove() {
+  deleteImport(removing.value.id)
+  removing.value = null
 }
 </script>
