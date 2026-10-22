@@ -34,7 +34,7 @@ export function buildSearchIndex(entry, today) {
     entry.responsible,
     entry.center,
     entry.notes,
-    entry.type === 'receita' ? 'receita' : 'despesa',
+    entry.type === 'in' ? 'receita' : 'despesa',
     statusLabel(entry, today),
     dateForms(entry.dueDate).join(' '),
     ...money(entry.forecast),

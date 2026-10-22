@@ -246,10 +246,10 @@
               <!-- Tipo -->
               <td class="px-4 py-3 whitespace-nowrap">
                 <span
-                  :class="entry.type === 'receita' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'"
+                  :class="entry.type === 'in' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'"
                   class="text-xs px-2 py-1 rounded-lg font-medium"
                 >
-                  {{ entry.type === 'receita' ? 'Receita' : 'Despesa' }}
+                  {{ entry.type === 'in' ? 'Receita' : 'Despesa' }}
                 </span>
               </td>
             </tr>

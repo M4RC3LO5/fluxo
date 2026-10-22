@@ -40,8 +40,12 @@
         <p class="text-sm font-medium text-slate-200">{{ entry.center || '—' }}</p>
       </div>
       <div class="rounded-xl bg-white/5 p-3">
+        <p class="mb-1 text-xs text-slate-500">Categoria</p>
+        <p class="text-sm font-medium" :class="entry.category ? 'text-slate-200' : 'text-slate-500'">{{ entry.category || 'Sem categoria' }}</p>
+      </div>
+      <div class="rounded-xl bg-white/5 p-3">
         <p class="mb-1 text-xs text-slate-500">Tipo</p>
-        <p class="text-sm font-medium" :class="entry.type === 'receita' ? 'text-emerald-400' : 'text-rose-400'">{{ entry.type === 'receita' ? 'Receita' : 'Despesa' }}</p>
+        <p class="text-sm font-medium" :class="entry.type === 'in' ? 'text-emerald-400' : entry.type === 'out' ? 'text-rose-400' : 'text-slate-500'">{{ entry.type === 'in' ? 'Entrada' : entry.type === 'out' ? 'Saída' : '—' }}</p>
       </div>
     </div>
 

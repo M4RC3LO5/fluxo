@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx'
 import { parseDate } from '@/utils/formatters'
+import { normalizeEntry } from './normalize.js'
 
 const HEADER_MAP = {
   vencimento: 'dueDate',
@@ -39,8 +40,8 @@ const HEADER_MAP = {
   centro: 'center',
   'centro de custo': 'center',
   'cost center': 'center',
-  categoria: 'center',
-  category: 'center',
+  categoria: 'category',
+  category: 'category',
   departamento: 'center',
   tipo: 'type',
   type: 'type',
@@ -99,7 +100,7 @@ function nextId() {
   return `imp_${_idCounter++}`
 }
 
-export async function parseXlsx(file) {
+export async function parseXlsx(file, { importId = null } = {}) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onerror = () => reject(new Error('Falha ao ler o arquivo.'))
@@ -177,10 +178,11 @@ export async function parseXlsx(file) {
           const responsible = String(get('responsible') || '').trim()
           const payer = String(get('payer') || '').trim()
           const center = String(get('center') || '').trim()
-          const type = String(get('type') || '').trim().toLowerCase()
+          const category = String(get('category') || '').trim()
+          const type = String(get('type') || '').trim()
           const notes = String(get('notes') || '').trim()
 
-          entries.push({
+          entries.push(normalizeEntry({
             id: nextId(),
             dueDate,
             description,
@@ -190,9 +192,10 @@ export async function parseXlsx(file) {
             responsible,
             payer,
             center,
-            type: type || 'despesa',
+            category,
+            type,
             notes,
-          })
+          }, { source: 'xlsx', importId }))
         })
 
         if (skipped > 0) {

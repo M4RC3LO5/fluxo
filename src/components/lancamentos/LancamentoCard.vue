@@ -15,9 +15,9 @@
         <span class="h-1.5 w-1.5 rounded-full" :class="status.dot"></span>{{ status.label }}
       </span>
       <span
-        :class="entry.type === 'receita' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'"
+        :class="entry.type === 'in' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'"
         class="rounded-lg px-2 py-1 text-xs font-medium"
-      >{{ entry.type === 'receita' ? 'Receita' : 'Despesa' }}</span>
+      >{{ entry.type === 'in' ? 'Receita' : 'Despesa' }}</span>
       <span v-if="entry.center" class="rounded-lg bg-white/5 px-2 py-1 text-xs text-slate-400">{{ entry.center }}</span>
     </div>
   </button>
