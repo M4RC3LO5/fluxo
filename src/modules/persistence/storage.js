@@ -1,14 +1,17 @@
-import { get, set, setMany, clear, createStore } from 'idb-keyval'
+import { get, set, setMany, delMany, clear, createStore } from 'idb-keyval'
 import { toRaw } from 'vue'
 
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export const KEYS = {
   schema: 'fluxo:schema',
   entries: 'fluxo:finance:entries',
-  history: 'fluxo:import:history',
-  activeVersionId: 'fluxo:import:activeVersionId'
+  history: 'fluxo:import:history'
 }
+
+// chaves que existiam em versões antigas: lidas só pelas migrações e apagadas depois
+const ACTIVE_VERSION_ID = 'fluxo:import:activeVersionId'
+export const LEGACY_KEYS = [ACTIVE_VERSION_ID]
 
 /**
  * Migrações por versão de destino, aplicadas em sequência. Cada uma recebe um objeto
@@ -32,6 +35,25 @@ export const MIGRATIONS = {
         importId: e.importId ?? null
       }))
     }
+  },
+
+  // v2 → v3: livro-caixa acumulado. Só a versão ativa guardava os lançamentos; as outras
+  // versões do histórico não têm mais lançamentos e saem. Lançamentos sem importId ficam com ela.
+  3: (data) => {
+    const { [ACTIVE_VERSION_ID]: activeId, ...rest } = data
+    const entries = rest[KEYS.entries]
+    if (!Array.isArray(entries) || entries.length === 0) return { ...rest, [KEYS.history]: [] }
+
+    const active = (Array.isArray(rest[KEYS.history]) ? rest[KEYS.history] : []).find(r => r.id === activeId)
+    const record = active
+      ? { id: active.id, source: active.source ?? 'xlsx', fileName: active.fileName ?? active.versionName ?? 'Importação',
+          importedAt: active.importedAt ?? new Date().toISOString() }
+      : { id: 'legado', source: 'xlsx', fileName: 'Dados anteriores', importedAt: new Date().toISOString() }
+    return {
+      ...rest,
+      [KEYS.entries]: entries.map(e => ({ ...e, importId: e.importId ?? record.id })),
+      [KEYS.history]: [{ ...record, count: entries.length, skipped: 0 }]
+    }
   }
 }
 
@@ -46,7 +68,7 @@ const plain = (value) => JSON.parse(JSON.stringify(toRaw(value)))
 
 async function migrate(s, from) {
   let data = {}
-  for (const key of Object.values(KEYS)) {
+  for (const key of [...Object.values(KEYS), ...LEGACY_KEYS]) {
     if (key === KEYS.schema) continue
     const value = await get(key, s)
     if (value !== undefined) data[key] = value
@@ -54,6 +76,7 @@ async function migrate(s, from) {
   for (let v = from + 1; v <= SCHEMA_VERSION; v++) data = MIGRATIONS[v](data)
   // dados migrados e novo schema gravados juntos (transação única)
   await setMany([...Object.entries(data), [KEYS.schema, SCHEMA_VERSION]], s)
+  await delMany(LEGACY_KEYS, s)
 }
 
 function checkSchema() {
