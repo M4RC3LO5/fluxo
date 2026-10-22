@@ -9,7 +9,7 @@ async function importPlanilha(page, arquivo, registros) {
   await page.clock.setFixedTime(FIXED_NOW)
   await page.goto('/importacoes')
   await page.locator('[data-testid="source-input-xlsx"]').setInputFiles(arquivo)
-  await expect(page.getByText(`${registros} registros importados`)).toBeVisible()
+  await expect(page.getByText(`${registros} lançamentos importados`)).toBeVisible()
   await abrirLancamentos(page)
 }
 const importCategorias = page => importPlanilha(page, FIXTURE_CATEGORIAS, 5)
@@ -113,13 +113,13 @@ test('Migração de dados do schema 1', async ({ page }) => {
   await expect(detailField(page, 'Centro de Custo')).toHaveText('Tecnologia') // center não vira category
   await closeDetail(page)
 
-  expect(await idb.get(page, 'fluxo:schema')).toBe(2)
+  expect(await idb.get(page, 'fluxo:schema')).toBe(3) // v1 → v2 → v3 em sequência
   const entries = await idb.get(page, 'fluxo:finance:entries')
   expect(entries).toHaveLength(2)
   for (const e of entries) {
     expect(e.category).toBeNull()
     expect(e.source).toBe('xlsx')
-    expect(e.importId).toBeNull()
+    expect(e.importId).toBe(1) // v3: herda o id da versão ativa do histórico
   }
   expect(entries.map(e => e.type)).toEqual([null, 'in'])
 })

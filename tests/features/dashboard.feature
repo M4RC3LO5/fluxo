@@ -9,7 +9,7 @@ Funcionalidade: Dashboard financeiro
     E seleciono a fonte "Planilha Excel"
     E anexo o arquivo "tests/fixtures/fluxo_exemplo.xlsx"
     E clico em "Importar"
-    E vejo a mensagem "15 registros importados com sucesso"
+    E vejo a mensagem "15 lançamentos importados"
     Quando acesso o menu "Dashboard"
 
   Cenário: KPIs principais exibem valores da importação

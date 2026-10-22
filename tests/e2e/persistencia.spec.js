@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { importFixture } from './helpers/importFixture.js'
+import { waitAppReady } from './helpers/appReady.js'
 
 const kpis = page => page.getByTestId('kpi-card').allInnerTexts()
 const history = page => page.getByText('Histórico de Importações')
@@ -22,13 +23,15 @@ test('Dados sobrevivem ao recarregar', async ({ page }) => {
   await page.goto('/importacoes')
   await expect(history(page)).toBeVisible()
   await expect(page.getByText('fluxo_exemplo').first()).toBeVisible()
-  await expect(page.getByRole('button', { name: '✓ Ativa' })).toBeVisible()
+  await expect(page.getByText('+15')).toBeVisible()
 })
 
 test('Remover versão persiste', async ({ page }) => {
   await importFixture(page)
   await page.getByRole('button', { name: 'Remover importação' }).click()
+  await page.getByTestId('confirm-remove').click()
   await expect(history(page)).toBeHidden()
+  await waitSaved(page)
 
   await page.reload()
   await expect(page.getByTestId('source-card-xlsx')).toBeVisible()
@@ -36,7 +39,8 @@ test('Remover versão persiste', async ({ page }) => {
   await page.goto('/lancamentos')
   await expect(page.getByText('0 de 0 registros')).toBeVisible()
   await page.goto('/dashboard')
-  await expect(page.getByTestId('kpi-card')).toHaveCount(0)
+  await waitAppReady(page)
+  await expect(page.getByTestId('metric-card')).toHaveCount(0) // métricas só aparecem com lançamentos
 })
 
 test('Primeira abertura sem dados', async ({ page }) => {
@@ -45,7 +49,8 @@ test('Primeira abertura sem dados', async ({ page }) => {
   page.on('pageerror', e => problemas.push(e.message))
 
   await page.goto('/dashboard')
-  await expect(page.getByTestId('kpi-card')).toHaveCount(0)
+  await waitAppReady(page)
+  await expect(page.getByTestId('metric-card')).toHaveCount(0) // métricas só aparecem com lançamentos
   await page.goto('/lancamentos')
   await expect(page.getByText('0 de 0 registros')).toBeVisible()
   expect(problemas).toEqual([])

@@ -14,7 +14,7 @@ Funcionalidade: Importação em um passo
 
   Cenário: Escolher o arquivo importa sem passos extras
     Quando escolho o arquivo "tests/fixtures/fluxo_exemplo.xlsx" no card "Planilha Excel"
-    Então vejo "15 registros importados com sucesso"
+    Então vejo "15 lançamentos importados"
     E vejo a versão "fluxo_exemplo"
     E vejo os botões "Ver Dashboard" e "Ver Lançamentos"
 
@@ -41,12 +41,12 @@ Funcionalidade: Importação em um passo
   Cenário: Arrastar o arquivo sobre o card importa
     Dado que estou em um computador
     Quando arrasto o arquivo "tests/fixtures/fluxo_exemplo.xlsx" sobre o card "Planilha Excel"
-    Então vejo "15 registros importados com sucesso"
+    Então vejo "15 lançamentos importados"
 
   Cenário: Arrastar o arquivo em qualquer lugar detecta a fonte
     Dado que estou em um computador
     Quando arrasto o arquivo "tests/fixtures/fluxo_exemplo.xlsx" sobre a página
-    Então vejo "15 registros importados com sucesso"
+    Então vejo "15 lançamentos importados"
 
   Cenário: Celular orienta o toque e não rola para os lados
     Dado que estou em um celular

@@ -4,11 +4,11 @@ Funcionalidade: Navegação mobile first
   Quero navegar entre as áreas do app de forma adequada ao meu dispositivo
   Para usar o app com conforto em qualquer tela
 
-  Cenário: Celular exibe barra inferior com 4 itens
+  Cenário: Celular exibe barra inferior com 3 itens
     Dado que acesso o app em um celular
     Quando abro a página "Dashboard"
     Então vejo a barra de navegação inferior
-    E a barra exibe os itens "Dashboard", "Lançamentos", "Importar" e "Versões"
+    E a barra exibe os itens "Dashboard", "Lançamentos" e "Importar"
     E a barra lateral não está visível
 
   Esquema do Cenário: Celular navega pela barra inferior
@@ -22,7 +22,6 @@ Funcionalidade: Navegação mobile first
       | item        | rota         |
       | Lançamentos | /lancamentos |
       | Importar    | /importacoes |
-      | Versões     | /versoes     |
       | Dashboard   | /dashboard   |
 
   Cenário: Itens da barra inferior têm área de toque adequada
@@ -39,7 +38,6 @@ Funcionalidade: Navegação mobile first
       | Dashboard   |
       | Lançamentos |
       | Importações |
-      | Versões     |
 
   Cenário: Conteúdo não fica escondido atrás da barra inferior
     Dado que acesso o app em um celular

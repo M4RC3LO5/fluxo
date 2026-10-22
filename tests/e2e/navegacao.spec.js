@@ -8,17 +8,17 @@ const items = page => page.getByTestId('bottom-nav-item')
 test.describe('Celular', () => {
   test.beforeEach(({ isMobile }) => test.skip(!isMobile, 'cenário de celular'))
 
-  test('Celular exibe barra inferior com 4 itens', async ({ page }) => {
+  test('Celular exibe barra inferior com 3 itens', async ({ page }) => {
     await page.goto('/dashboard')
     await expect(bottomNav(page)).toBeVisible()
-    await expect(items(page)).toHaveCount(4)
-    const nomes = ['Dashboard', 'Lançamentos', 'Importar', 'Versões']
+    await expect(items(page)).toHaveCount(3)
+    const nomes = ['Dashboard', 'Lançamentos', 'Importar']
     for (const [i, nome] of nomes.entries()) await expect(items(page).nth(i)).toContainText(nome)
     await expect(page.getByTestId('sidebar')).toBeHidden()
   })
 
   for (const [item, rota] of [
-    ['Lançamentos', '/lancamentos'], ['Importar', '/importacoes'], ['Versões', '/versoes'], ['Dashboard', '/dashboard'],
+    ['Lançamentos', '/lancamentos'], ['Importar', '/importacoes'], ['Dashboard', '/dashboard'],
   ]) {
     test(`Celular navega pela barra inferior: ${item}`, async ({ page }) => {
       await page.goto('/dashboard')
@@ -30,8 +30,9 @@ test.describe('Celular', () => {
 
   test('Itens da barra inferior têm área de toque adequada', async ({ page }) => {
     await page.goto('/dashboard')
+    await waitAppReady(page)
     const boxes = await items(page).evaluateAll(els => els.map(e => e.getBoundingClientRect()).map(r => [r.width, r.height]))
-    expect(boxes).toHaveLength(4)
+    expect(boxes).toHaveLength(3)
     for (const [w, h] of boxes) {
       expect(w).toBeGreaterThanOrEqual(44)
       expect(h).toBeGreaterThanOrEqual(44)
@@ -39,7 +40,7 @@ test.describe('Celular', () => {
   })
 
   for (const [pagina, rota] of [
-    ['Dashboard', '/dashboard'], ['Lançamentos', '/lancamentos'], ['Importações', '/importacoes'], ['Versões', '/versoes'],
+    ['Dashboard', '/dashboard'], ['Lançamentos', '/lancamentos'], ['Importações', '/importacoes'],
   ]) {
     test(`Celular não tem rolagem horizontal: ${pagina}`, async ({ page }) => {
       if (pagina === 'Lançamentos') {

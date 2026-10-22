@@ -22,7 +22,7 @@ test('Clicar no card abre o seletor de arquivo', async ({ page }) => {
 
 test('Escolher o arquivo importa sem passos extras', async ({ page }) => {
   await input(page, 'xlsx').setInputFiles(FIXTURE)
-  await expect(result(page)).toContainText('15 registros importados com sucesso')
+  await expect(result(page)).toContainText('15 lançamentos importados')
   await expect(result(page)).toContainText('fluxo_exemplo')
   await expect(result(page).getByRole('link', { name: 'Ver Dashboard' })).toBeVisible()
   await expect(result(page).getByRole('link', { name: 'Ver Lançamentos' })).toBeVisible()
@@ -63,14 +63,14 @@ test.describe('Computador', () => {
     await dropFile(page, '[data-testid="source-card-xlsx"]', FIXTURE, { drop: false })
     await expect(card(page, 'xlsx')).toHaveClass(/border-brand-400/) // destaque durante o dragover
     await dropFile(page, '[data-testid="source-card-xlsx"]', FIXTURE)
-    await expect(result(page)).toContainText('15 registros importados com sucesso')
+    await expect(result(page)).toContainText('15 lançamentos importados')
   })
 
   test('Arrastar o arquivo em qualquer lugar detecta a fonte', async ({ page }) => {
     await dropFile(page, 'main', FIXTURE, { drop: false })
     await expect(page.getByTestId('drop-overlay')).toContainText('Solte para importar')
     await dropFile(page, 'main', FIXTURE)
-    await expect(result(page)).toContainText('15 registros importados com sucesso')
+    await expect(result(page)).toContainText('15 lançamentos importados')
     await expect(page.getByTestId('drop-overlay')).toBeHidden()
   })
 

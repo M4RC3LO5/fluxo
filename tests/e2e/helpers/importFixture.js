@@ -8,5 +8,5 @@ export async function importFixture(page) {
   await page.clock.setFixedTime(FIXED_NOW)
   await page.goto('/importacoes')
   await page.locator('[data-testid="source-input-xlsx"]').setInputFiles(FIXTURE)
-  await expect(page.getByText('15 registros importados')).toBeVisible()
+  await expect(page.getByText('15 lançamentos importados')).toBeVisible()
 }
