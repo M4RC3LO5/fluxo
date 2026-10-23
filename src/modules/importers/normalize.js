@@ -17,6 +17,12 @@ export function normalizeType(rawType, forecast = 0) {
   return forecast < 0 ? 'out' : null
 }
 
+function normalizeInstallment(i) {
+  return Number.isInteger(i?.current) && Number.isInteger(i?.total) && i.current > 0 && i.total >= i.current
+    ? { current: i.current, total: i.total }
+    : null
+}
+
 export function normalizeEntry(raw, { source, importId = null } = {}) {
   if (!SOURCES.includes(source)) throw new Error(`Fonte de importação desconhecida: ${source}`)
   const forecast = amount(raw.forecast)
@@ -34,6 +40,8 @@ export function normalizeEntry(raw, { source, importId = null } = {}) {
     category: text(raw.category) || null,
     externalId: text(raw.externalId) || null, // id da transação na origem (ex.: Identificador do Nubank)
     account: text(raw.account) || null,
+    transfer: raw.transfer === true, // entre contas próprias / pagamento de fatura: nem receita nem gasto
+    installment: normalizeInstallment(raw.installment), // { current, total } | null
     type: normalizeType(raw.type, forecast),
     source,
     importId

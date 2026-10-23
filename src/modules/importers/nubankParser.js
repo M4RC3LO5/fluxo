@@ -1,6 +1,7 @@
 import { normalizeText } from '@/utils/search.js'
 import { readCsv, parseBrNumber } from './csv.js'
 import { normalizeEntry } from './normalize.js'
+import { classifyNubank } from './nubankRules.js'
 
 export const NOT_NUBANK = 'CSV não reconhecido como extrato Nubank'
 
@@ -52,15 +53,21 @@ export async function parseNubank(file, { importId = null } = {}) {
 
     // conta: negativo = saída; cartão: compra positiva = saída, pagamento/estorno negativo = entrada
     const out = layout === 'conta' ? amount < 0 : amount > 0
+    const description = cell(row, idx.description) || `Lançamento ${line}`
+    const rule = classifyNubank(description, layout)
+    // a regra só define a categoria se o arquivo não trouxe uma; transferência sempre define
+    const category = rule.transfer ? rule.category : cell(row, idx.category) || rule.category
     entries.push(normalizeEntry({
       id: crypto.randomUUID(),
       dueDate,
-      description: cell(row, idx.description) || `Lançamento ${line}`,
+      description,
       forecast: Math.abs(amount),
       paid: Math.abs(amount),
       status: 'paid',
       type: out ? 'out' : 'in',
-      category: cell(row, idx.category),
+      category,
+      transfer: rule.transfer,
+      installment: rule.installment,
       externalId: cell(row, idx.externalId),
       account: layout === 'conta' ? 'nubank-conta' : 'nubank-cartao'
     }, { source: 'nubank', importId }))
