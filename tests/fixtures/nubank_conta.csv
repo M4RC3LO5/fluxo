@@ -5,3 +5,5 @@ Data,Valor,Identificador,Descrição
 08/11/2026,-1234.56,id-0004,Pagamento de fatura
 09/11/2026,2500.00,id-0005,Transferência recebida - Empresa Ficticia Ltda
 31/02/2026,-10.00,id-0006,Compra no débito - Data impossível
+10/11/2026,1000.00,id-0007,Resgate RDB
+11/11/2026,-1000.00,id-0008,Aplicação RDB

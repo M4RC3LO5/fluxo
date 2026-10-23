@@ -21,7 +21,7 @@ describe('parseNubank — conta', () => {
   it('converte as linhas válidas e avisa da inválida', async () => {
     const { entries, warnings, layout } = await parseNubank(fixture('nubank_conta.csv'), { importId: 'imp-1' })
     expect(layout).toBe('conta')
-    expect(entries).toHaveLength(5)
+    expect(entries).toHaveLength(7)
     expect(warnings).toEqual(['Linha 7 ignorada: data inválida ("31/02/2026").'])
 
     const enviado = entries[0]
@@ -32,9 +32,9 @@ describe('parseNubank — conta', () => {
     })
     const recebido = entries[1]
     expect(recebido).toMatchObject({ forecast: 320.5, type: 'in', externalId: 'id-0002' })
-    expect(entries[3]).toMatchObject({ description: 'Pagamento de fatura', forecast: 1234.56, type: 'out' })
+    expect(entries[3]).toMatchObject({ description: 'Pagamento de fatura', forecast: 1234.56, type: 'out', transfer: true, category: 'Pagamento de fatura' })
     expect(entries[4]).toMatchObject({ forecast: 2500, type: 'in' })
-    expect(new Set(entries.map(e => e.id)).size).toBe(5)
+    expect(new Set(entries.map(e => e.id)).size).toBe(7)
   })
 
   it('avisa de valor inválido', async () => {
@@ -50,6 +50,7 @@ describe('parseNubank — cartão', () => {
     expect(layout).toBe('cartao')
     expect(warnings).toEqual([])
     expect(entries.map(e => e.type)).toEqual(['out', 'out', 'out', 'in', 'in'])
+    expect(entries.map(e => e.transfer)).toEqual([false, false, false, true, false]) // só o pagamento recebido
     expect(entries.map(e => e.forecast)).toEqual([189.9, 99.9, 76.5, 1234.56, 32])
     expect(entries[1].description).toBe('Loja X - Parcela 2/10')
     expect(entries[0]).toMatchObject({ dueDate: '2026-11-01', externalId: null, account: 'nubank-cartao', category: null, status: 'paid', paid: 189.9 })
@@ -69,5 +70,38 @@ describe('parseNubank — erros', () => {
   })
   it('sem nenhuma linha válida', async () => {
     await expect(parseNubank(csv('date,title,amount\nxx,Y,1\n'))).rejects.toThrow('Nenhum lançamento válido')
+  })
+})
+
+describe('parseNubank — linhas especiais', () => {
+  it('aplica as regras e mantém a descrição', async () => {
+    const { entries } = await parseNubank(fixture('nubank_cartao_especiais.csv'))
+    expect(entries).toHaveLength(10)
+    const por = (d) => entries.find(e => e.description === d)
+    expect(por('Pagamento recebido')).toMatchObject({ transfer: true, category: 'Pagamento de fatura', type: 'in', forecast: 1234.56 })
+    expect(por('Saldo em atraso')).toMatchObject({ transfer: true, category: 'Saldo anterior' })
+    expect(por('Multa de atraso')).toMatchObject({ transfer: false, category: 'Encargos' })
+    expect(por('IOF de "Loja X"')).toMatchObject({ category: 'IOF' })
+    expect(por('Estorno de "Loja Y" (Y)')).toMatchObject({ category: 'Estorno', type: 'in' })
+    expect(por('Loja Z - Parcela 2/10')).toMatchObject({ installment: { current: 2, total: 10 }, category: null })
+    expect(entries.filter(e => e.description === 'Pedagio Tag')).toHaveLength(2)
+  })
+
+  it('categoria do arquivo vale, exceto em transferência', async () => {
+    const texto = 'date,category,title,amount\n2026-11-01,mercado,Multa de atraso,"10,00"\n2026-11-02,outros,Pagamento recebido,"-50,00"\n'
+    const { entries } = await parseNubank(csv(texto))
+    expect(entries[0].category).toBe('mercado') // regra só preenche quando o arquivo não trouxe
+    expect(entries[1]).toMatchObject({ category: 'Pagamento de fatura', transfer: true }) // transferência sempre define
+  })
+
+  it('conta: resgate e aplicação RDB são transferências', async () => {
+    const { entries } = await parseNubank(fixture('nubank_conta.csv'))
+    expect(entries.filter(e => e.transfer).map(e => e.description)).toEqual(['Pagamento de fatura', 'Resgate RDB', 'Aplicação RDB'])
+    expect(entries.find(e => e.description === 'Resgate RDB')).toMatchObject({ category: 'Investimentos', type: 'in' })
+  })
+
+  it('lançamentos comuns: transfer false e installment null', async () => {
+    const { entries } = await parseNubank(fixture('nubank_cartao.csv'))
+    expect(entries[0]).toMatchObject({ transfer: false, installment: null })
   })
 })
