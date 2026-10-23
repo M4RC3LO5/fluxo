@@ -3,8 +3,8 @@ export const SOURCES = ['xlsx', 'nubank', 'mercadopago', 'ofx', 'pdf']
 
 const strip = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 
-const TYPE_IN = ['receita', 'entrada', 'credito']
-const TYPE_OUT = ['despesa', 'saida', 'debito']
+const TYPE_IN = ['receita', 'entrada', 'credito', 'in']
+const TYPE_OUT = ['despesa', 'saida', 'debito', 'out']
 
 const text = (v) => String(v ?? '').trim()
 const amount = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
@@ -32,6 +32,8 @@ export function normalizeEntry(raw, { source, importId = null } = {}) {
     center: text(raw.center),
     notes: text(raw.notes),
     category: text(raw.category) || null,
+    externalId: text(raw.externalId) || null, // id da transação na origem (ex.: Identificador do Nubank)
+    account: text(raw.account) || null,
     type: normalizeType(raw.type, forecast),
     source,
     importId

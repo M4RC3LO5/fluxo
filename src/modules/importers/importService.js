@@ -1,8 +1,17 @@
 import { useFinanceStore } from '@/stores/financeStore.js'
 import { useImportStore } from '@/stores/importStore.js'
 import { parseXlsx } from './xlsxImporter.js'
+import { parseNubank, detectNubankLayout, NOT_NUBANK } from './nubankParser.js'
+import { readCsv } from './csv.js'
 
-const parsers = { xlsx: parseXlsx }
+const parsers = { xlsx: parseXlsx, nubank: parseNubank }
+
+/** Fonte de um .csv solto na página, pelo cabeçalho. Por ora só o Nubank é reconhecido. */
+export async function detectCsvSource(file) {
+  const { headers } = await readCsv(file)
+  if (detectNubankLayout(headers)) return 'nubank'
+  throw new Error(NOT_NUBANK)
+}
 
 /** Importa o arquivo e soma os lançamentos novos ao livro-caixa. Duplicatas de dados anteriores são ignoradas. */
 export async function runImport(file, sourceId) {

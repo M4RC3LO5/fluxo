@@ -161,7 +161,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useFinanceStore } from '@/stores/financeStore.js'
 import { useImportStore } from '@/stores/importStore.js'
-import { runImport, deleteImport } from '@/modules/importers/importService.js'
+import { runImport, deleteImport, detectCsvSource } from '@/modules/importers/importService.js'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 
 const financeStore = useFinanceStore()
@@ -171,7 +171,7 @@ const importStore  = useImportStore()
 // available: parser implementado. Só xlsx por enquanto; as demais aparecem como "Em breve".
 const importSources = [
   { id: 'xlsx',        icon: '📊', name: 'Planilha Excel', description: 'Arquivo .xlsx com lançamentos estruturados', badge: 'XLSX', ext: '.xlsx', available: true  },
-  { id: 'nubank',      icon: '💜', name: 'Nubank',         description: 'Extrato CSV exportado do app Nubank',        badge: 'CSV',  ext: '.csv',  available: false },
+  { id: 'nubank',      icon: '💜', name: 'Nubank',         description: 'Extrato da conta ou fatura do cartão (CSV)', badge: 'CSV',  ext: '.csv',  available: true  },
   { id: 'mercadopago', icon: '💙', name: 'Mercado Pago',   description: 'Extrato CSV do Mercado Pago',                badge: 'CSV',  ext: '.csv',  available: false },
   { id: 'santander',   icon: '🔴', name: 'Santander',      description: 'Extrato PDF — processamento via IA',         badge: 'PDF',  ext: '.pdf',  available: false },
 ]
@@ -263,7 +263,7 @@ function onWindowDragLeave(e) {
   dragDepth = Math.max(0, dragDepth - 1)
   if (dragDepth === 0) pageDragging.value = false
 }
-function onWindowDrop(e) {
+async function onWindowDrop(e) {
   if (!hasFiles(e)) return
   e.preventDefault()
   resetDrag()
@@ -274,6 +274,15 @@ function onWindowDrop(e) {
   importError.value = null
   const ext = extensionOf(file)
   const candidates = importSources.filter(s => s.ext === ext)
+  if (ext === '.csv') { // várias fontes usam .csv: a fonte sai do cabeçalho
+    try {
+      const id = await detectCsvSource(file)
+      return processFile(importSources.find(s => s.id === id), file)
+    } catch (err) {
+      importError.value = err.message
+      return
+    }
+  }
   const available = candidates.find(s => s.available)
   if (available) return processFile(available, file)
   if (candidates.length) {
