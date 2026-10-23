@@ -2,10 +2,13 @@ import { normalizeText } from '@/utils/search.js'
 
 /**
  * Transferências entre contas PRÓPRIAS (funções puras). Um Pix para outra conta do titular não é gasto nem receita.
- * transferSource: 'bank' (o banco/parser já sabia) | 'name' (nome do titular) | 'pair' (par entre contas) | 'manual' | null.
+ * transferSource: 'bank' (o banco/parser já sabia) | 'name' (nome do titular) | 'pair' (par entre contas) | 'rule' (regra do usuário) | 'manual' | null.
  * Lançamento 'manual' nunca é alterado por detecção automática.
  */
 export const TRANSFER_CATEGORY = 'Transferência entre contas'
+export const INVOICE_CATEGORY = 'Pagamento de fatura'
+const CARD_ACCOUNT = 'nubank-cartao' // o cartão cujo "Pagamento recebido" é pago por outra conta
+const INVOICE_MAX_DAYS = 5
 const MIN_NAME_CHARS = 10 // o banco pode truncar o nome: pelo menos 10 caracteres em comum, desde o início do nome
 
 const norm = (s) => normalizeText(s).replace(/\s+/g, ' ').trim()
@@ -49,9 +52,12 @@ function unmark(e) {
   return { ...e, transfer: false, transferSource: null, pairedWith: null, ...(own ? { category: null, categorySource: null } : {}) }
 }
 
-function markTransfer(entry, source, pairedWith = null) {
-  return { ...entry, transfer: true, transferSource: source, pairedWith, category: TRANSFER_CATEGORY, categorySource: 'rule' }
+function markTransfer(entry, source, pairedWith = null, category = TRANSFER_CATEGORY) {
+  return { ...entry, transfer: true, transferSource: source, pairedWith, category, categorySource: 'rule' }
 }
+
+// categoria posta pela detecção automática ou por regra (a escolhida à mão e a do banco ficam)
+const autoCategory = (e) => e.categorySource !== 'manual' && ['name', 'pair', 'rule'].includes(transferSourceOf(e))
 
 /**
  * Pix/TED/transferência cuja descrição traz o nome do titular → transferência ('name').
@@ -73,35 +79,57 @@ const dayNumber = (iso) => {
 }
 const cents = (n) => Math.round((Number(n) || 0) * 100)
 
-/**
- * Pareia Pix/TED entre contas diferentes: uma saída e uma entrada de mesmo valor (em centavos), em OUTRA conta,
- * com 0 ou 1 dia de diferença. Só pareia se houver EXATAMENTE 1 candidato de cada lado.
- * A entrada precisa ser Pix/TED/transferência OU já ser transferência (por nome/banco).
- */
-export function pairTransfers(entries) {
-  const outs = entries.filter(e => e.type === 'out' && !e.transfer && !isOwnTransferMark(e) && !e.pairedWith && hasTransferKeyword(e.description))
-  const ins = entries.filter(e => e.type === 'in' && !isOwnTransferMark(e) && !e.pairedWith && (e.transfer || hasTransferKeyword(e.description)))
+const sameDayRange = (a, b, max) => Math.abs(dayNumber(a.dueDate) - dayNumber(b.dueDate)) <= max
 
-  const compatible = (o, i) => o.account !== i.account && cents(o.forecast) === cents(i.forecast)
-    && Math.abs(dayNumber(o.dueDate) - dayNumber(i.dueDate)) <= 1
-
-  const pairs = new Map() // id da saída → entrada
-  for (const o of outs) {
-    const cands = ins.filter(i => compatible(o, i))
-    if (cands.length !== 1) continue
-    const back = outs.filter(x => compatible(x, cands[0]))
-    if (back.length === 1) pairs.set(o.id, cands[0])
-  }
+// aplica os pares (id da saída → entrada): quem já é transferência só ganha o vínculo; os demais viram 'pair'
+function applyPairs(entries, pairs, category = TRANSFER_CATEGORY) {
   if (!pairs.size) return entries
-
   const partnerOf = new Map()
   for (const [outId, i] of pairs) { partnerOf.set(outId, i.id); partnerOf.set(i.id, outId) }
   return entries.map(e => {
     const partner = partnerOf.get(e.id)
     if (!partner) return e
-    // quem já é transferência (banco/nome) só ganha o vínculo; os demais viram transferência 'pair'
-    return e.transfer ? { ...e, pairedWith: partner } : markTransfer(e, 'pair', partner)
+    return e.transfer ? { ...e, pairedWith: partner } : markTransfer(e, 'pair', partner, category)
   })
+}
+
+// exatamente 1 candidato de cada lado
+function uniquePairs(outs, ins, isPair) {
+  const pairs = new Map()
+  for (const o of outs) {
+    const cands = ins.filter(i => isPair(o, i))
+    if (cands.length !== 1) continue
+    if (outs.filter(x => isPair(x, cands[0])).length === 1) pairs.set(o.id, cands[0])
+  }
+  return pairs
+}
+
+/**
+ * Pagamento de fatura: uma saída (QUALQUER descrição) fora do cartão, com o mesmo valor em centavos de uma entrada
+ * 'Pagamento de fatura' do banco (ex.: "Pagamento recebido" do cartão Nubank), com 0 a 5 dias de diferença.
+ * Só pareia com EXATAMENTE 1 candidato de cada lado. Lançamento 'manual' (transferência ou categoria) nunca é tocado.
+ */
+function pairInvoicePayments(entries) {
+  const outs = entries.filter(e => e.type === 'out' && !e.transfer && !e.pairedWith && e.account !== CARD_ACCOUNT
+    && !isOwnTransferMark(e) && e.categorySource !== 'manual')
+  const ins = entries.filter(e => e.type === 'in' && e.transfer && transferSourceOf(e) === 'bank' && !e.pairedWith
+    && norm(e.category) === norm(INVOICE_CATEGORY))
+  const isPair = (o, i) => o.account !== i.account && cents(o.forecast) === cents(i.forecast) && sameDayRange(o, i, INVOICE_MAX_DAYS)
+  return applyPairs(entries, uniquePairs(outs, ins, isPair), INVOICE_CATEGORY)
+}
+
+/**
+ * Pareia Pix/TED entre contas diferentes: uma saída e uma entrada de mesmo valor (em centavos), em OUTRA conta,
+ * com 0 ou 1 dia de diferença. Só pareia se houver EXATAMENTE 1 candidato de cada lado.
+ * A entrada precisa ser Pix/TED/transferência OU já ser transferência (por nome/banco).
+ * Antes disso, pareia o pagamento de fatura (ver pairInvoicePayments).
+ */
+export function pairTransfers(entriesIn) {
+  const entries = pairInvoicePayments(entriesIn)
+  const outs = entries.filter(e => e.type === 'out' && !e.transfer && !isOwnTransferMark(e) && !e.pairedWith && hasTransferKeyword(e.description))
+  const ins = entries.filter(e => e.type === 'in' && !isOwnTransferMark(e) && !e.pairedWith && (e.transfer || hasTransferKeyword(e.description)))
+  const isPair = (o, i) => o.account !== i.account && cents(o.forecast) === cents(i.forecast) && sameDayRange(o, i, 1)
+  return applyPairs(entries, uniquePairs(outs, ins, isPair))
 }
 
 /** Nome do titular + pareamento sobre todos os lançamentos. Idempotente. */
@@ -109,7 +137,7 @@ export function detectOwnTransfers(entries, holderNames) {
   return pairTransfers(markByHolderName(entries, holderNames))
 }
 
-const ownCategory = (e) => e.category === TRANSFER_CATEGORY && e.categorySource !== 'manual'
+const ownCategory = (e) => autoCategory(e) || (e.category === TRANSFER_CATEGORY && e.categorySource !== 'manual')
 const revert = (e) => ({
   ...e, transfer: false, transferSource: 'manual', pairedWith: null,
   ...(ownCategory(e) ? { category: null, categorySource: null } : {})
