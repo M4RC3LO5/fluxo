@@ -95,6 +95,7 @@
           <div class="min-w-0">
             <p class="text-sm font-bold text-white">{{ importResult.added }} {{ importResult.added === 1 ? 'lançamento importado' : 'lançamentos importados' }}<template v-if="importResult.skipped > 0"> · {{ importResult.skipped }} {{ importResult.skipped === 1 ? 'duplicata ignorada' : 'duplicatas ignoradas' }}</template></p>
             <p class="mt-1 break-words text-xs text-slate-400">Arquivo: <span class="font-semibold text-slate-200">{{ importResult.fileName }}</span></p>
+            <p v-if="importResult.period" data-testid="import-period" class="mt-1 text-xs text-slate-400">Período do extrato: <span class="font-semibold text-slate-200">{{ formatDate(importResult.period.start) }} a {{ formatDate(importResult.period.end) }}</span></p>
           </div>
         </div>
         <ul v-if="importResult.warnings.length" class="space-y-1 text-xs text-amber-300">
@@ -161,8 +162,9 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useFinanceStore } from '@/stores/financeStore.js'
 import { useImportStore } from '@/stores/importStore.js'
-import { runImport, deleteImport, detectCsvSource } from '@/modules/importers/importService.js'
+import { runImport, deleteImport, detectCsvSource, detectPdfSourceOfFile } from '@/modules/importers/importService.js'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import { formatDate } from '@/utils/formatters.js'
 
 const financeStore = useFinanceStore()
 const importStore  = useImportStore()
@@ -172,7 +174,7 @@ const importStore  = useImportStore()
 const importSources = [
   { id: 'xlsx',        icon: '📊', name: 'Planilha Excel', description: 'Arquivo .xlsx com lançamentos estruturados', badge: 'XLSX', ext: '.xlsx', available: true  },
   { id: 'nubank',      icon: '💜', name: 'Nubank',         description: 'Extrato da conta ou fatura do cartão (CSV)', badge: 'CSV',  ext: '.csv',  available: true  },
-  { id: 'mercadopago', icon: '💙', name: 'Mercado Pago',   description: 'Extrato CSV do Mercado Pago',                badge: 'CSV',  ext: '.csv',  available: false },
+  { id: 'mercadopago', icon: '💙', name: 'Mercado Pago',   description: 'Extrato da conta (PDF)',                      badge: 'PDF',  ext: '.pdf',  available: true  },
   { id: 'santander',   icon: '🔴', name: 'Santander',      description: 'Extrato PDF — processamento via IA',         badge: 'PDF',  ext: '.pdf',  available: false },
 ]
 
@@ -215,8 +217,8 @@ async function processFile(source, file) {
 
   importingId.value = source.id
   try {
-    const { added, skipped, warnings } = await runImport(file, source.id)
-    importResult.value = { added, skipped, fileName: file.name, warnings }
+    const { added, skipped, warnings, period } = await runImport(file, source.id)
+    importResult.value = { added, skipped, fileName: file.name, warnings, period }
   } catch (err) {
     importError.value = err.message || 'Não foi possível ler o arquivo. Verifique se está no formato correto.'
   } finally {
@@ -274,9 +276,9 @@ async function onWindowDrop(e) {
   importError.value = null
   const ext = extensionOf(file)
   const candidates = importSources.filter(s => s.ext === ext)
-  if (ext === '.csv') { // várias fontes usam .csv: a fonte sai do cabeçalho
+  if (ext === '.csv' || ext === '.pdf') { // várias fontes dividem a extensão: a fonte sai do conteúdo
     try {
-      const id = await detectCsvSource(file)
+      const id = ext === '.csv' ? await detectCsvSource(file) : await detectPdfSourceOfFile(file)
       return processFile(importSources.find(s => s.id === id), file)
     } catch (err) {
       importError.value = err.message
