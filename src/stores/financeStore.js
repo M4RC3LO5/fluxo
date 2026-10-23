@@ -102,11 +102,22 @@ export const useFinanceStore = defineStore('finance', () => {
   const persist = debounced(() => save(KEYS.entries, entries.value))
   watch(entries, persist, { deep: true })
 
-  // soma ao livro-caixa; ignora quem já existe nos dados anteriores (repetição dentro do mesmo lote entra).
+  // soma ao livro-caixa. Duplicata por contagem: cada ocorrência já existente de uma chave "cancela" um
+  // lançamento novo com a mesma chave (existente 1× + arquivo 2× → entra 1); repetição só dentro do lote entra.
   // Grava na hora, sem esperar o debounce; resolve { added, skipped } depois de gravar.
   function addEntries(list) {
-    const existing = new Set(entries.value.map(dedupKey))
-    const fresh = list.filter(e => !existing.has(dedupKey(e)))
+    const available = new Map()
+    for (const e of entries.value) {
+      const key = dedupKey(e)
+      available.set(key, (available.get(key) || 0) + 1)
+    }
+    const fresh = list.filter(e => {
+      const key = dedupKey(e)
+      const n = available.get(key) || 0
+      if (n === 0) return true
+      available.set(key, n - 1)
+      return false
+    })
     entries.value = [...entries.value, ...fresh]
     return persist.flush().then(() => ({ added: fresh.length, skipped: list.length - fresh.length }))
   }

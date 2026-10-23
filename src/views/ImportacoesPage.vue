@@ -93,7 +93,7 @@
         <div class="flex items-start gap-4">
           <span class="mt-0.5 text-2xl">✅</span>
           <div class="min-w-0">
-            <p class="text-sm font-bold text-white">{{ importResult.added }} lançamentos importados<template v-if="importResult.skipped > 0"> · {{ importResult.skipped }} duplicatas ignoradas</template></p>
+            <p class="text-sm font-bold text-white">{{ importResult.added }} {{ importResult.added === 1 ? 'lançamento importado' : 'lançamentos importados' }}<template v-if="importResult.skipped > 0"> · {{ importResult.skipped }} {{ importResult.skipped === 1 ? 'duplicata ignorada' : 'duplicatas ignoradas' }}</template></p>
             <p class="mt-1 break-words text-xs text-slate-400">Arquivo: <span class="font-semibold text-slate-200">{{ importResult.fileName }}</span></p>
           </div>
         </div>
