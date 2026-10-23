@@ -17,8 +17,21 @@ export async function itemsFromDocument(pdf) {
   return { pages }
 }
 
-/** Lê o PDF no navegador. O pdfjs (e seu worker) só é baixado aqui, sob demanda: não pesa no bundle inicial. */
-export async function extractPdfItems(file) {
+// o mesmo arquivo é lido para detectar a fonte e para importar: a leitura é feita uma vez só
+const cache = new WeakMap()
+
+/** Lê o PDF no navegador (uma vez por arquivo). O pdfjs (e seu worker) só é baixado aqui, sob demanda: não pesa no bundle inicial. */
+export function extractPdfItems(file) {
+  let pending = cache.get(file)
+  if (!pending) {
+    pending = readPdfItems(file)
+    cache.set(file, pending)
+    pending.catch(() => cache.delete(file))
+  }
+  return pending
+}
+
+async function readPdfItems(file) {
   const [pdfjs, worker] = await Promise.all([
     import('pdfjs-dist'),
     import('pdfjs-dist/build/pdf.worker.min.mjs?url')

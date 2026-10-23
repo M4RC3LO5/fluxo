@@ -38,6 +38,7 @@
             :ref="el => { if (el) inputRefs[source.id] = el }"
             :data-testid="`source-input-${source.id}`"
             type="file"
+            multiple
             class="hidden"
             :accept="source.ext"
             :disabled="!source.available"
@@ -75,7 +76,54 @@
           </template>
         </div>
       </div>
+      <div class="mt-4 flex justify-center">
+        <button type="button" data-testid="batch-pick" :disabled="!!importingId"
+          class="min-h-[44px] rounded-xl border border-white/10 px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+          @click="batchInput?.click()">Importar vários arquivos de uma vez</button>
+        <input ref="batchInput" data-testid="batch-input" type="file" multiple class="hidden" accept=".csv,.pdf,.xlsx"
+          @click.stop @change="onBatchChange" />
+      </div>
+      <p class="mx-auto mt-2 max-w-xl text-center text-[11px] text-slate-500">CSV, PDF e XLSX misturados: o Fluxo reconhece a fonte de cada arquivo. Também dá para arrastar vários arquivos para qualquer lugar desta página.</p>
     </section>
+
+    <!-- Lote: progresso -->
+    <div v-if="batch.running" data-testid="batch-progress" role="status" class="glass-card space-y-3 p-5">
+      <p class="text-sm font-semibold text-white">Importando {{ batch.current }} de {{ batch.total }}<span class="font-normal text-slate-400"> · {{ batch.fileName }}</span></p>
+      <div class="h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemin="0" :aria-valuemax="batch.total" :aria-valuenow="batch.current - 1">
+        <div class="h-full rounded-full bg-brand-500 transition-all" :style="{ width: `${((batch.current - 1) / batch.total) * 100}%` }"></div>
+      </div>
+    </div>
+
+    <!-- Lote: resultado por arquivo -->
+    <transition name="fade">
+      <div v-if="batch.result" data-testid="batch-result" class="glass-card space-y-4 border-l-4 p-5"
+        :class="batch.result.totals.failed ? 'border-l-amber-500' : 'border-l-emerald-500'">
+        <ul class="space-y-2">
+          <li v-for="(item, i) in batch.result.items" :key="i" data-testid="batch-item" :data-ok="item.ok"
+            class="break-words text-sm" :class="item.ok ? 'text-slate-100' : 'text-rose-300'">
+            <template v-if="item.ok">✓ <span class="font-semibold">{{ item.fileName }}</span> · {{ countLabel(item.added, 'importado', 'importados') }} · {{ countLabel(item.skipped, 'duplicata', 'duplicatas') }}</template>
+            <template v-else>✗ <span class="font-semibold">{{ item.fileName }}</span> · {{ item.error }}</template>
+            <ul v-if="item.ok && item.warnings.length" class="mt-1 space-y-0.5 text-xs text-amber-300">
+              <li v-for="(w, k) in item.warnings" :key="k">⚠️ {{ w }}</li>
+            </ul>
+          </li>
+        </ul>
+        <div class="border-t border-white/10 pt-3">
+          <p data-testid="batch-total" class="text-sm font-bold text-white">
+            Total: {{ countLabel(batch.result.totals.added, 'lançamento importado', 'lançamentos importados') }}
+            · {{ countLabel(batch.result.totals.skipped, 'duplicata ignorada', 'duplicatas ignoradas') }}
+            · {{ batch.result.totals.imported }} de {{ batch.result.totals.files }} {{ batch.result.totals.files === 1 ? 'arquivo' : 'arquivos' }}<template v-if="batch.result.totals.failed"> ({{ countLabel(batch.result.totals.failed, 'falhou', 'falharam') }})</template>
+          </p>
+          <p v-if="batch.result.totals.uncategorized > 0" data-testid="batch-uncategorized" class="mt-1 text-xs text-amber-300">
+            {{ batch.result.totals.uncategorized }} sem categoria · <router-link to="/revisar" data-testid="batch-review-link" class="font-semibold underline underline-offset-2">Revisar</router-link>
+          </p>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <router-link to="/dashboard" class="flex min-h-[44px] items-center justify-center rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-500">Ver Dashboard</router-link>
+          <router-link to="/lancamentos" class="flex min-h-[44px] items-center justify-center rounded-xl border border-white/10 px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/5">Ver Lançamentos</router-link>
+        </div>
+      </div>
+    </transition>
 
     <!-- Erro -->
     <transition name="fade">
@@ -166,7 +214,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useFinanceStore } from '@/stores/financeStore.js'
 import { useImportStore } from '@/stores/importStore.js'
-import { runImport, deleteImport, detectCsvSource, detectPdfSourceOfFile } from '@/modules/importers/importService.js'
+import { runImport, runImportBatch, deleteImport, detectCsvSource, detectPdfSourceOfFile } from '@/modules/importers/importService.js'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { formatDate } from '@/utils/formatters.js'
 
@@ -186,6 +234,10 @@ const inputRefs = reactive({})
 const importingId = ref(null)
 const importResult = ref(null)
 const importError = ref(null)
+const batchInput = ref(null)
+const batch = reactive({ running: false, current: 0, total: 0, fileName: '', result: null })
+
+const countLabel = (n, one, many) => `${n} ${n === 1 ? one : many}`
 
 function extensionOf(file) {
   const m = /\.([^.]+)$/.exec(file.name)
@@ -198,9 +250,45 @@ function openPicker(source) {
 }
 
 function onInputChange(e, source) {
-  const file = e.target.files?.[0]
+  const files = [...(e.target.files || [])]
   e.target.value = '' // permite escolher o mesmo arquivo de novo
-  if (file) processFile(source, file)
+  receive(files, source)
+}
+
+function onBatchChange(e) {
+  const files = [...(e.target.files || [])]
+  e.target.value = ''
+  receive(files, null)
+}
+
+// um arquivo: fluxo de sempre; vários: lote (source = card onde caíram, ou null = detectar cada um pelo conteúdo)
+function receive(files, source) {
+  if (!files.length) return
+  if (files.length === 1) return source ? processFile(source, files[0]) : processDropped(files[0])
+  return processBatch(files, source)
+}
+
+// ─── Lote: vários arquivos, um por vez ───────────────────────────────────
+async function processBatch(files, source) {
+  if (importingId.value) return
+  importResult.value = null
+  importError.value = null
+  batch.result = null
+  importingId.value = source?.id || 'batch'
+  batch.running = true
+  batch.current = 1
+  batch.total = files.length
+  try {
+    // cada arquivo é validado (no card: tem de ser daquela fonte); o que falhar não para os outros
+    const result = await runImportBatch(files, {
+      sourceId: source?.id || null,
+      onProgress: ({ current, total, fileName }) => Object.assign(batch, { current, total, fileName })
+    })
+    batch.result = result
+  } finally {
+    batch.running = false
+    importingId.value = null
+  }
 }
 
 // ─── Importação (automática ao receber o arquivo) ────────────────────────
@@ -208,6 +296,7 @@ async function processFile(source, file) {
   if (importingId.value) return
   importResult.value = null
   importError.value = null
+  batch.result = null
 
   if (!source.available) {
     importError.value = `A fonte ${source.name} ainda não está disponível.`
@@ -241,8 +330,7 @@ function onCardDragLeave(e, source) {
 }
 function onCardDrop(e, source) {
   resetDrag()
-  const file = e.dataTransfer?.files?.[0]
-  if (file) processFile(source, file)
+  receive([...(e.dataTransfer?.files || [])], source)
 }
 
 // ─── Drag & drop: em qualquer lugar da página (detecta a fonte pela extensão) ─
@@ -269,15 +357,18 @@ function onWindowDragLeave(e) {
   dragDepth = Math.max(0, dragDepth - 1)
   if (dragDepth === 0) pageDragging.value = false
 }
-async function onWindowDrop(e) {
+function onWindowDrop(e) {
   if (!hasFiles(e)) return
   e.preventDefault()
   resetDrag()
-  const file = e.dataTransfer.files?.[0]
-  if (!file) return
+  receive([...(e.dataTransfer.files || [])], null) // copia a lista agora: o DataTransfer esvazia depois do evento
+}
 
+// um arquivo solto na página: a fonte sai do conteúdo (csv/pdf) ou da extensão
+async function processDropped(file) {
   importResult.value = null
   importError.value = null
+  batch.result = null
   const ext = extensionOf(file)
   const candidates = importSources.filter(s => s.ext === ext)
   if (ext === '.csv' || ext === '.pdf') { // várias fontes dividem a extensão: a fonte sai do conteúdo
