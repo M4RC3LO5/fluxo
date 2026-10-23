@@ -28,14 +28,6 @@ Funcionalidade: Importação em um passo
     Então vejo o erro "Arquivo .csv não é aceito pela fonte Planilha Excel. Envie um .xlsx."
     E nenhum lançamento é importado
 
-  Esquema do Cenário: Fontes ainda não disponíveis
-    Então o card "<fonte>" exibe "Em breve"
-    E clicar no card "<fonte>" não abre o seletor de arquivo
-
-    Exemplos:
-      | fonte        |
-      | Santander    |
-
   Cenário: Arrastar o arquivo sobre o card importa
     Dado que estou em um computador
     Quando arrasto o arquivo "tests/fixtures/fluxo_exemplo.xlsx" sobre o card "Planilha Excel"

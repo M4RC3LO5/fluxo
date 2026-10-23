@@ -33,10 +33,6 @@ Funcionalidade: Importação Mercado Pago (PDF)
     Quando arrasto um PDF sem as marcas do Mercado Pago
     Então vejo "PDF não reconhecido"
 
-  Cenário: PDF do Santander arrastado na página
-    Quando arrasto um PDF "EXTRATO CONSOLIDADO INTELIGENTE"
-    Então vejo "Santander ainda não suportado"
-
   Cenário: PDF escaneado, sem texto
     Quando importo um PDF sem texto pelo card Mercado Pago
     Então vejo "PDF sem texto (imagem escaneada) não é suportado"

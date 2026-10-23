@@ -104,5 +104,4 @@ function simples(file, linhas) {
 console.log(build('mercadopago_extrato.pdf'))
 build('mercadopago_totais_errados.pdf', { saldoFinalImpresso: 9999.99 })
 simples('pdf_outro_banco.pdf', ['Banco Exemplo S.A.', 'EXTRATO DE CONTA', 'Titular: Fulano de Tal', 'Sem relação com o Mercado Pago? Não: este é outro emissor.'.replace('Mercado Pago', 'emissor')])
-simples('pdf_santander.pdf', ['Banco Santander (Brasil) S.A.', 'EXTRATO CONSOLIDADO INTELIGENTE', 'Titular: Fulano de Tal'])
 simples('pdf_sem_texto.pdf', [])

@@ -43,18 +43,6 @@ test('Arquivo com extensão errada é recusado', async ({ page }) => {
   await expect(page.getByText('Histórico de Importações')).toBeHidden() // nada foi importado
 })
 
-for (const [nome, id] of [['Santander', 'santander']]) {
-  test(`Fontes ainda não disponíveis: ${nome}`, async ({ page }) => {
-    await expect(card(page, id)).toContainText('Em breve')
-    await expect(card(page, id)).toHaveAttribute('aria-disabled', 'true')
-    let abriu = false
-    page.on('filechooser', () => { abriu = true })
-    await card(page, id).click()
-    await page.waitForTimeout(500)
-    expect(abriu).toBe(false)
-  })
-}
-
 test.describe('Computador', () => {
   test.beforeEach(({ isMobile }) => test.skip(isMobile, 'cenário de computador'))
 

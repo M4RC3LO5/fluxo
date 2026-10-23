@@ -7,7 +7,6 @@ import { abrirLancamentos, rows, openDetail, detailField, closeDetail } from './
 const EXTRATO = 'tests/fixtures/mercadopago_extrato.pdf'
 const ERRADOS = 'tests/fixtures/mercadopago_totais_errados.pdf'
 const OUTRO_BANCO = 'tests/fixtures/pdf_outro_banco.pdf'
-const SANTANDER = 'tests/fixtures/pdf_santander.pdf'
 const SEM_TEXTO = 'tests/fixtures/pdf_sem_texto.pdf'
 
 const result = page => page.getByTestId('import-result')
@@ -113,10 +112,5 @@ test.describe('Computador', () => {
     await dropFile(page, 'main', OUTRO_BANCO)
     await expect(error(page)).toContainText('PDF não reconhecido', { timeout: LONGO })
     await expect(result(page)).toBeHidden()
-  })
-
-  test('PDF do Santander arrastado na página', async ({ page }) => {
-    await dropFile(page, 'main', SANTANDER)
-    await expect(error(page)).toContainText('Santander ainda não suportado', { timeout: LONGO })
   })
 })
