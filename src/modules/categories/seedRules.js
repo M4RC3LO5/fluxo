@@ -11,7 +11,7 @@ const SEEDS = {
   'Transporte': ['uber', '99app', '99 ride', 'uberrides'],
   'Assinaturas': ['netflix', 'spotify', 'google one', 'youtube', 'youtubepremium', 'amazon prime', 'amazonprimebr', 'amazon music',
     'openai', 'chatgpt', 'anthropic', 'claude', 'steamgames', 'playstation', 'hostgator', 'supabase'],
-  'Saúde': ['drogasil', 'drogaria', 'droga raia', 'raia', 'farma', 'rdsaude', 'hosp '],
+  'Saúde': ['drogasil', 'drogaria', 'droga raia', 'raia drogasil', 'farma', 'rdsaude', 'hosp '],
   'Compras': ['amazon', 'amazonmktplc', 'shopee', 'mercadolivre', 'aliexpress', 'shein', 'magalu', 'americanas', 'decathlon', 'kalunga'],
   'Contas da casa': ['vivo', 'claro', 'tim ', 'sabesp', 'enel', 'comgas'],
   'Cuidados pessoais': ['barbearia', 'salao', 'cinco a sec'],
