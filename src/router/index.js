@@ -19,6 +19,12 @@ const routes = [
     component: () => import('@/views/LancamentosPage.vue')
   },
   {
+    path: '/configuracoes',
+    name: 'Configuracoes',
+    meta: { title: 'Configurações' },
+    component: () => import('@/views/SettingsPage.vue')
+  },
+  {
     path: '/importacoes',
     name: 'Importacoes',
     meta: { title: 'Importar' },

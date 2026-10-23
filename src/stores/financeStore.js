@@ -5,6 +5,7 @@ import { today } from '@/utils/formatters.js'
 import { buildSearchIndex, matches, normalizeText } from '@/utils/search.js'
 import { dedupKey } from '@/modules/importers/dedup.js'
 import { applyRules as applyCategoryRules } from '@/modules/categories/rules.js'
+import { detectOwnTransfers, undoTransfer, markTransferManual } from '@/modules/transfers/ownTransfers.js'
 
 export const useFinanceStore = defineStore('finance', () => {
   const entries = ref([])
@@ -157,6 +158,33 @@ export const useFinanceStore = defineStore('finance', () => {
     return persist.flush().then(() => changed)
   }
 
+  // aplica no lugar o que as funções puras de transferência mudaram (assim o detalhe aberto acompanha)
+  const TRANSFER_FIELDS = ['transfer', 'transferSource', 'pairedWith', 'category', 'categorySource']
+  function syncTransfers(next) {
+    let changed = 0
+    next.forEach((n, i) => {
+      const current = entries.value[i]
+      if (n === current) return
+      for (const f of TRANSFER_FIELDS) current[f] = n[f] ?? null
+      changed++
+    })
+    return changed
+  }
+  const saved = (changed) => (changed > 0 ? persist.flush().then(() => changed) : Promise.resolve(0))
+
+  /** Transferências entre contas próprias: nome do titular + pareamento, em todos os lançamentos (idempotente). */
+  function applyOwnTransfers(holderNames) {
+    return saved(syncTransfers(detectOwnTransfers(entries.value, holderNames)))
+  }
+  /** "Não é transferência": volta a Entrada/Saída, fica 'manual' e desfaz o par nos dois lados. */
+  function undoOwnTransfer(id) {
+    return saved(syncTransfers(undoTransfer(entries.value, id)))
+  }
+  /** "Marcar como transferência entre contas" (Pix/TED em Entrada/Saída). */
+  function markOwnTransfer(id) {
+    return saved(syncTransfers(markTransferManual(entries.value, id)))
+  }
+
   function removeByImport(importId) {
     entries.value = entries.value.filter(e => e.importId !== importId)
     return persist.flush()
@@ -173,6 +201,6 @@ export const useFinanceStore = defineStore('finance', () => {
     forecastVsPaidDiff, paidCount, pendingCount,
     totalByResponsible, totalByPayer, totalByCenter, upcomingDue,
     filteredEntries,
-    addEntries, removeByImport, setEntryCategory, applyRules, hydrate
+    addEntries, removeByImport, setEntryCategory, applyRules, applyOwnTransfers, undoOwnTransfer, markOwnTransfer, hydrate
   }
 })

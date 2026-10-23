@@ -1,7 +1,9 @@
 import { useFinanceStore } from '@/stores/financeStore.js'
 import { useImportStore } from '@/stores/importStore.js'
 import { useRulesStore } from '@/stores/rulesStore.js'
+import { useSettingsStore } from '@/stores/settingsStore.js'
 import { applyRules } from '@/modules/categories/rules.js'
+import { refreshOwnTransfers } from '@/modules/transfers/transferService.js'
 import { parseXlsx } from './xlsxImporter.js'
 import { parseNubank, detectNubankLayout, NOT_NUBANK } from './nubankParser.js'
 import { parseMercadoPago } from './mercadoPagoParser.js'
@@ -39,6 +41,10 @@ export async function runImport(file, sourceId) {
   const { added, skipped } = await useFinanceStore().addEntries(applyRules(entries, useRulesStore().rules))
   await useImportStore().addImport({ id: importId, source: sourceId, fileName: file.name, count: added, skipped })
   const period = summary?.periodStart ? { start: summary.periodStart, end: summary.periodEnd } : null
+  // PDFs trazem o titular no cabeçalho: aprende o nome e reavalia as transferências entre contas próprias
+  if (summary?.holder) await useSettingsStore().addHolderName(summary.holder)
+  await refreshOwnTransfers()
+
   const monthLabel = summary?.month ? `${summary.month}/${summary.year}` : null
   return { added, skipped, warnings: warnings || [], period, monthLabel }
 }

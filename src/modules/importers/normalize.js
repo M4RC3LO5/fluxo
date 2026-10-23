@@ -49,6 +49,8 @@ export function normalizeEntry(raw, { source, importId = null } = {}) {
     externalId: text(raw.externalId) || null, // id da transação na origem (ex.: Identificador do Nubank)
     account: text(raw.account) || null,
     transfer: raw.transfer === true, // entre contas próprias / pagamento de fatura: nem receita nem gasto
+    transferSource: raw.transfer === true ? 'bank' : null, // quem sabia que é transferência: o parser/banco
+    pairedWith: null,
     installment: normalizeInstallment(raw.installment), // { current, total } | null
     type: normalizeType(raw.type, forecast),
     source,
