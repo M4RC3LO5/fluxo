@@ -69,6 +69,19 @@
       </div>
     </div>
 
+    <!-- Transferência entre contas próprias: detectada por nome / pareada / marcada por você (o 'bank' não tem botões) -->
+    <div v-if="transferNote" data-testid="transfer-info" class="mt-3 space-y-3 rounded-xl bg-sky-500/10 p-3">
+      <p class="text-sm text-sky-200">{{ transferNote }}</p>
+      <button type="button" data-testid="transfer-undo"
+        class="min-h-[44px] w-full rounded-xl border border-white/10 px-4 text-sm font-semibold text-slate-100 transition-colors hover:bg-white/10"
+        @click="undoTransfer">Não é transferência</button>
+    </div>
+    <div v-else-if="canMarkTransfer" class="mt-3">
+      <button type="button" data-testid="transfer-mark"
+        class="min-h-[44px] w-full rounded-xl border border-white/10 px-4 text-sm font-semibold text-slate-100 transition-colors hover:bg-white/10"
+        @click="markTransfer">Marcar como transferência entre contas</button>
+    </div>
+
     <CategoryEditor v-if="!entry.transfer" :open="editing" :entry="entry" @close="editing = false" />
 
     <div v-if="entry.notes" class="mt-3 rounded-xl bg-white/5 p-3">
@@ -82,6 +95,10 @@
 import { computed, ref } from 'vue'
 import CategoryEditor from '@/components/lancamentos/CategoryEditor.vue'
 import { categorySourceOf } from '@/modules/categories/rules.js'
+import { useFinanceStore } from '@/stores/financeStore.js'
+import { useRulesStore } from '@/stores/rulesStore.js'
+import { hasTransferKeyword, transferSourceOf } from '@/modules/transfers/ownTransfers.js'
+import { accountLabel } from '@/modules/transfers/accounts.js'
 import { formatCurrency, formatDate, today } from '@/utils/formatters.js'
 import { typeBadge } from '@/utils/entryType.js'
 
@@ -92,6 +109,36 @@ const props = defineProps({
 defineEmits(['close'])
 
 const badge = computed(() => typeBadge(props.entry))
+
+const financeStore = useFinanceStore()
+const rulesStore = useRulesStore()
+
+// ─── Transferência entre contas próprias ────────────────────────────────────
+const shortDate = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
+const transferNote = computed(() => {
+  const e = props.entry
+  if (!e.transfer) return ''
+  const source = transferSourceOf(e)
+  if (source === 'name') return 'Transferência entre contas próprias (detectada por nome)'
+  if (source === 'manual') return 'Transferência entre contas próprias (marcada por você)'
+  if (source === 'pair') {
+    const partner = financeStore.entries.find(x => x.id === e.pairedWith)
+    return partner
+      ? `Transferência entre contas próprias (pareada com ${accountLabel(partner.account)} em ${shortDate(partner.dueDate)})`
+      : 'Transferência entre contas próprias (pareada)'
+  }
+  return '' // 'bank': pagamento de fatura etc. — sem botões
+})
+const canMarkTransfer = computed(() =>
+  !props.entry.transfer && (props.entry.type === 'in' || props.entry.type === 'out') && hasTransferKeyword(props.entry.description))
+
+async function undoTransfer() {
+  await financeStore.undoOwnTransfer(props.entry.id)
+  await financeStore.applyRules(rulesStore.rules) // volta a ser Entrada/Saída: as regras de categoria voltam a valer
+}
+function markTransfer() {
+  return financeStore.markOwnTransfer(props.entry.id)
+}
 
 const editing = ref(false)
 const sourceHint = computed(() => {
