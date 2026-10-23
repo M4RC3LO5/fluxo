@@ -6,7 +6,8 @@ export const SCHEMA_VERSION = 3
 export const KEYS = {
   schema: 'fluxo:schema',
   entries: 'fluxo:finance:entries',
-  history: 'fluxo:import:history'
+  history: 'fluxo:import:history',
+  rules: 'fluxo:rules' // regras de categoria criadas pelo usuário
 }
 
 // chaves que existiam em versões antigas: lidas só pelas migrações e apagadas depois

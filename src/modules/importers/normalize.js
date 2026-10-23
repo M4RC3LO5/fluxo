@@ -17,6 +17,13 @@ export function normalizeType(rawType, forecast = 0) {
   return forecast < 0 ? 'out' : null
 }
 
+const CATEGORY_SOURCES = ['bank', 'rule', 'manual']
+// categoria que já vem do parser/arquivo é 'bank'; sem categoria não há origem
+function normalizeCategorySource(raw) {
+  if (!text(raw.category)) return null
+  return CATEGORY_SOURCES.includes(raw.categorySource) ? raw.categorySource : 'bank'
+}
+
 function normalizeInstallment(i) {
   return Number.isInteger(i?.current) && Number.isInteger(i?.total) && i.current > 0 && i.total >= i.current
     ? { current: i.current, total: i.total }
@@ -38,6 +45,7 @@ export function normalizeEntry(raw, { source, importId = null } = {}) {
     center: text(raw.center),
     notes: text(raw.notes),
     category: text(raw.category) || null,
+    categorySource: normalizeCategorySource(raw),
     externalId: text(raw.externalId) || null, // id da transação na origem (ex.: Identificador do Nubank)
     account: text(raw.account) || null,
     transfer: raw.transfer === true, // entre contas próprias / pagamento de fatura: nem receita nem gasto

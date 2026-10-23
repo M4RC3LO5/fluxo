@@ -1,4 +1,6 @@
 import { normalizeText } from '@/utils/search.js'
+import { canonicalCategory } from '@/modules/categories/catalog.js'
+import { shortDescription } from '@/utils/description.js'
 
 /**
  * KPIs da visão Pessoal (funções puras, sem Vue). Só entra o que de fato se moveu (status 'paid').
@@ -90,11 +92,16 @@ function topExpenses(entries, month, n, keyOf) {
     .map(g => ({ key: g.key, name: g.name, total: reais(g.total), count: g.count, share: total ? Math.round((g.total / total) * 1000) / 10 : 0 }))
 }
 
-/** Maiores gastos do mês por categoria; categoria nula = "Sem categoria" (key '__none__'). share = % das Saídas. */
+/**
+ * Maiores gastos do mês por categoria; categoria nula = "Sem categoria" (key '__none__'). share = % das Saídas.
+ * "mercado" (coluna do banco) e "Mercado" (catálogo) são a mesma categoria: agrupa sem acento/caixa e mostra o nome do catálogo.
+ */
 export function topExpensesByCategory(entries, month, n = 5) {
   return topExpenses(entries, month, n, (e) => {
     const category = (e.category || '').trim()
-    return category ? { key: category, name: category } : { key: NO_CATEGORY, name: NO_CATEGORY_LABEL }
+    if (!category) return { key: NO_CATEGORY, name: NO_CATEGORY_LABEL }
+    const name = canonicalCategory(category)
+    return { key: normalizeText(name), name }
   })
 }
 
@@ -103,7 +110,8 @@ const INSTALLMENT_SUFFIX = /\s*-\s*parcela\s+\d+\/\d+\s*$/i
 /** Maiores gastos do mês por descrição (sem acento/caixa e sem o sufixo " - Parcela N/M"). */
 export function topExpensesByDescription(entries, month, n = 5) {
   return topExpenses(entries, month, n, (e) => {
-    const name = String(e.description || '').replace(INSTALLMENT_SUFFIX, '').replace(/\s+/g, ' ').trim()
+    // CPF mascarado e dados da conta saem do nome exibido (e do agrupamento)
+    const name = shortDescription(String(e.description || '')).replace(INSTALLMENT_SUFFIX, '').replace(/\s+/g, ' ').trim()
     return { key: normalizeText(name) || '—', name: name || '—' }
   })
 }

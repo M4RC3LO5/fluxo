@@ -1,5 +1,7 @@
 import { useFinanceStore } from '@/stores/financeStore.js'
 import { useImportStore } from '@/stores/importStore.js'
+import { useRulesStore } from '@/stores/rulesStore.js'
+import { applyRules } from '@/modules/categories/rules.js'
 import { parseXlsx } from './xlsxImporter.js'
 import { parseNubank, detectNubankLayout, NOT_NUBANK } from './nubankParser.js'
 import { parseMercadoPago } from './mercadoPagoParser.js'
@@ -33,7 +35,8 @@ export async function runImport(file, sourceId) {
   const { entries, warnings, summary } = await parse(file, { importId })
 
   // só devolve o resultado depois das duas gravações no storage
-  const { added, skipped } = await useFinanceStore().addEntries(entries)
+  // categoriza por regra os lançamentos novos (nunca os que o parser já categorizou)
+  const { added, skipped } = await useFinanceStore().addEntries(applyRules(entries, useRulesStore().rules))
   await useImportStore().addImport({ id: importId, source: sourceId, fileName: file.name, count: added, skipped })
   const period = summary?.periodStart ? { start: summary.periodStart, end: summary.periodEnd } : null
   const monthLabel = summary?.month ? `${summary.month}/${summary.year}` : null

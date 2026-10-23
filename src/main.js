@@ -4,6 +4,7 @@ import router from './router/index.js'
 import App from './App.vue'
 import { useFinanceStore } from './stores/financeStore.js'
 import { useImportStore } from './stores/importStore.js'
+import { useRulesStore } from './stores/rulesStore.js'
 import './assets/main.css'
 
 const app = createApp(App)
@@ -12,7 +13,7 @@ app.use(pinia)
 app.use(router)
 
 // hidrata antes de montar para não piscar o estado vazio; hydrate() nunca rejeita
-Promise.all([useFinanceStore(pinia).hydrate(), useImportStore(pinia).hydrate()])
+Promise.all([useFinanceStore(pinia).hydrate(), useImportStore(pinia).hydrate(), useRulesStore(pinia).hydrate()])
   .catch(err => console.warn('[fluxo] falha ao hidratar; seguindo só em memória.', err))
   .finally(() => {
     app.mount('#app')

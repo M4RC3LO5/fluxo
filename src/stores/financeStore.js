@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { KEYS, load, save, debounced } from '@/modules/persistence/storage.js'
 import { today } from '@/utils/formatters.js'
-import { buildSearchIndex, matches } from '@/utils/search.js'
+import { buildSearchIndex, matches, normalizeText } from '@/utils/search.js'
 import { dedupKey } from '@/modules/importers/dedup.js'
+import { applyRules as applyCategoryRules } from '@/modules/categories/rules.js'
 
 export const useFinanceStore = defineStore('finance', () => {
   const entries = ref([])
@@ -99,7 +100,7 @@ export const useFinanceStore = defineStore('finance', () => {
       if (kind === 'transfer' && !e.transfer) return false
       if ((kind === 'in' || kind === 'out') && (e.transfer || e.type !== kind)) return false
       if (category === '__none__' && e.category) return false
-      if (category && category !== '__none__' && e.category !== category) return false
+      if (category && category !== '__none__' && normalizeText(e.category) !== normalizeText(category)) return false
       if (status === 'paid'    && e.status !== 'paid') return false
       if (status === 'pending' && (e.status === 'paid' || (e.dueDate && e.dueDate < t))) return false
       if (status === 'overdue' && (e.status === 'paid' || !e.dueDate || e.dueDate >= t)) return false
@@ -134,6 +135,28 @@ export const useFinanceStore = defineStore('finance', () => {
     return persist.flush().then(() => ({ added: fresh.length, skipped: list.length - fresh.length }))
   }
 
+  /** Escolha manual de categoria: vira categorySource 'manual' e nenhuma regra mexe mais nele. */
+  function setEntryCategory(id, category) {
+    const entry = entries.value.find(e => e.id === id)
+    if (!entry) return Promise.resolve(false)
+    entry.category = category
+    entry.categorySource = 'manual'
+    return persist.flush().then(() => true)
+  }
+
+  /** Reaplica as regras a todos os lançamentos elegíveis (nunca bank, manual ou transferência). Devolve quantos mudaram. */
+  function applyRules(rules) {
+    const next = applyCategoryRules(entries.value, rules)
+    let changed = 0
+    next.forEach((n, i) => {
+      if (n !== entries.value[i]) {
+        Object.assign(entries.value[i], { category: n.category, categorySource: n.categorySource }) // no lugar: o detalhe aberto acompanha
+        changed++
+      }
+    })
+    return persist.flush().then(() => changed)
+  }
+
   function removeByImport(importId) {
     entries.value = entries.value.filter(e => e.importId !== importId)
     return persist.flush()
@@ -150,6 +173,6 @@ export const useFinanceStore = defineStore('finance', () => {
     forecastVsPaidDiff, paidCount, pendingCount,
     totalByResponsible, totalByPayer, totalByCenter, upcomingDue,
     filteredEntries,
-    addEntries, removeByImport, hydrate
+    addEntries, removeByImport, setEntryCategory, applyRules, hydrate
   }
 })

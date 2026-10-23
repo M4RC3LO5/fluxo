@@ -77,9 +77,9 @@
             <div class="space-y-1">
               <div v-for="item in byCategory" :key="item.key" data-testid="pf-rank-row" role="button" tabindex="0"
                 class="min-h-[44px] cursor-pointer rounded-xl p-2 transition-colors hover:bg-white/[0.04]"
-                @click="openLancamentos({ kind: 'out', category: item.key })"
-                @keydown.enter.prevent="openLancamentos({ kind: 'out', category: item.key })"
-                @keydown.space.prevent="openLancamentos({ kind: 'out', category: item.key })">
+                @click="openLancamentos({ kind: 'out', category: categoryFilter(item) })"
+                @keydown.enter.prevent="openLancamentos({ kind: 'out', category: categoryFilter(item) })"
+                @keydown.space.prevent="openLancamentos({ kind: 'out', category: categoryFilter(item) })">
                 <div class="flex items-center justify-between gap-3">
                   <div class="min-w-0">
                     <p class="truncate text-sm font-medium text-white">{{ item.name }}</p>
@@ -131,7 +131,7 @@ import { useFinanceStore } from '@/stores/financeStore.js'
 import PfMonthlyChart from '@/components/dashboard/PfMonthlyChart.vue'
 import { formatCurrency } from '@/utils/formatters.js'
 import {
-  availableMonths, monthSummary, monthlySeries, topExpensesByCategory, topExpensesByDescription, monthLabel
+  NO_CATEGORY, availableMonths, monthSummary, monthlySeries, topExpensesByCategory, topExpensesByDescription, monthLabel
 } from '@/modules/kpis/pfKpis.js'
 
 const financeStore = useFinanceStore()
@@ -161,6 +161,9 @@ const summary = computed(() => monthSummary(financeStore.entries, selected.value
 const series = computed(() => monthlySeries(financeStore.entries, selected.value, 12))
 const byCategory = computed(() => topExpensesByCategory(financeStore.entries, selected.value, 5))
 const byDescription = computed(() => topExpensesByDescription(financeStore.entries, selected.value, 5))
+
+// "Sem categoria" filtra por lançamentos sem categoria; as demais, pelo nome (sem acento/caixa)
+const categoryFilter = (item) => (item.key === NO_CATEGORY ? NO_CATEGORY : item.name)
 
 const formatPct = (n) => `${n.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
 
