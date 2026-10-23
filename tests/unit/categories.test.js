@@ -146,6 +146,8 @@ describe('regras seed: um exemplo real por grupo', () => {
     ['Superm Dia Pompeia', 'Mercado'],
     ['Uber *Trip Help.uber.com', 'Transporte'],
     ['Drogasil 1234', 'Saúde'],
+    ['Raia Drogasil - Parcela 1/2', 'Saúde'],
+    ['Droga Raia 22', 'Saúde'],
     ['Shopee Brasil', 'Compras'],
     ['Vivo Fibra 0800', 'Contas da casa'],
     ['Barbearia do Ze', 'Cuidados pessoais'],
@@ -162,11 +164,13 @@ describe('regras seed: um exemplo real por grupo', () => {
     expect(categoriaDe('Pedagio')).toBeNull()
     expect(categoriaDe('Mercado Livre')).toBeNull() // só "mercadolivre", colado
     expect(categoriaDe('Aluguel Imobiliaria Centro')).toBeNull()
+    expect(categoriaDe('Praia Mar')).toBeNull() // antes, o pattern "raia" casava com "Praia"
+    expect(categoriaDe('Raiane Silva')).toBeNull()
   })
 
   it('o espaço dos patterns curtos é mantido como escrito', () => {
     const p = SEED_RULES.map(r => r.pattern)
-    for (const exato of ['dia ', 'tim ', 'superm ', 'hosp ', 'raia', "sam's", 'ifd*']) expect(p).toContain(exato)
+    for (const exato of ['dia ', 'tim ', 'superm ', 'hosp ', 'raia drogasil', "sam's", 'ifd*']) expect(p).toContain(exato)
     expect(categoriaDe('Dia Supermercado Centro')).toBe('Mercado')
     expect(categoriaDe('Hosp Sao Luiz')).toBe('Saúde')
   })
