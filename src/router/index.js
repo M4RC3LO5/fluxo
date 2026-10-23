@@ -19,6 +19,12 @@ const routes = [
     component: () => import('@/views/LancamentosPage.vue')
   },
   {
+    path: '/compromissos',
+    name: 'Compromissos',
+    meta: { title: 'Compromissos' },
+    component: () => import('@/views/CommitmentsPage.vue')
+  },
+  {
     path: '/revisar',
     name: 'Revisar',
     meta: { title: 'Revisar' },

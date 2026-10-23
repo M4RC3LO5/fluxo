@@ -36,6 +36,23 @@
       <p v-if="status" data-testid="holder-status" role="status" class="text-xs text-emerald-300">{{ status }}</p>
     </section>
 
+    <!-- Recorrentes que o usuário marcou como "Não é recorrente" -->
+    <section class="glass-card mx-auto max-w-2xl space-y-4 p-5 sm:p-6" data-testid="ignored-section">
+      <div>
+        <h2 class="text-sm font-semibold text-white">Recorrentes ignorados</h2>
+        <p class="mt-1 text-xs text-slate-400">Itens que você marcou como “Não é recorrente” em Compromissos. Desfaça para eles voltarem à lista.</p>
+      </div>
+      <ul v-if="settings.ignoredRecurring.length" data-testid="ignored-list" class="space-y-2">
+        <li v-for="k in settings.ignoredRecurring" :key="k" data-testid="ignored-item" class="flex min-h-[44px] items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-2">
+          <span class="min-w-0 break-words font-mono text-sm text-slate-100">{{ k }}</span>
+          <button type="button" data-testid="ignored-undo" :aria-label="`Voltar a considerar ${k} como recorrente`"
+            class="min-h-[44px] shrink-0 rounded-lg px-3 text-xs font-semibold text-brand-300 transition-colors hover:bg-white/10"
+            @click="settings.unignoreRecurring(k)">Desfazer</button>
+        </li>
+      </ul>
+      <p v-else data-testid="ignored-empty" class="rounded-xl bg-white/5 px-4 py-3 text-sm text-slate-400">Nenhum item ignorado.</p>
+    </section>
+
     <!-- Minhas regras de categoria -->
     <section class="glass-card mx-auto max-w-2xl space-y-5 p-5 sm:p-6" data-testid="rules-section">
       <div>

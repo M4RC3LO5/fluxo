@@ -52,6 +52,13 @@
         </div>
       </section>
 
+      <!-- compromissos: assinaturas + parcelas do próximo mês -->
+      <router-link v-if="commitments.nextMonthTotal > 0" to="/compromissos" data-testid="cm-card"
+        class="glass-card mx-auto flex min-h-[48px] max-w-2xl items-center justify-between gap-3 border-l-4 border-l-amber-500 px-4 py-3 text-sm transition-colors hover:bg-white/[0.06]">
+        <span class="text-slate-200">Compromissos: <span class="font-mono font-bold text-white">{{ formatCurrency(commitments.nextMonthTotal) }}/mês</span></span>
+        <span class="font-semibold text-brand-300 underline underline-offset-2">· ver</span>
+      </router-link>
+
       <!-- c) Transferências (informativo) e lançamentos sem tipo -->
       <section class="space-y-2">
         <div data-testid="pf-transfers" role="button" tabindex="0" title="Ver as transferências do mês"
@@ -136,12 +143,15 @@ import { useRouter } from 'vue-router'
 import { useFinanceStore } from '@/stores/financeStore.js'
 import PfMonthlyChart from '@/components/dashboard/PfMonthlyChart.vue'
 import { countUncategorized } from '@/modules/categories/review.js'
+import { commitmentsOverview } from '@/modules/commitments/index.js'
+import { useSettingsStore } from '@/stores/settingsStore.js'
 import { formatCurrency } from '@/utils/formatters.js'
 import {
   NO_CATEGORY, availableMonths, monthSummary, monthlySeries, topExpensesByCategory, topExpensesByDescription, monthLabel
 } from '@/modules/kpis/pfKpis.js'
 
 const financeStore = useFinanceStore()
+const settings = useSettingsStore()
 const router = useRouter()
 
 const months = computed(() => availableMonths(financeStore.entries))
@@ -165,6 +175,7 @@ function selectMonth(month) {
 }
 
 const summary = computed(() => monthSummary(financeStore.entries, selected.value))
+const commitments = computed(() => commitmentsOverview(financeStore.entries, settings.ignoredRecurring))
 const uncategorized = computed(() => countUncategorized(financeStore.entries, { month: selected.value }))
 const series = computed(() => monthlySeries(financeStore.entries, selected.value, 12))
 const byCategory = computed(() => topExpensesByCategory(financeStore.entries, selected.value, 5))
