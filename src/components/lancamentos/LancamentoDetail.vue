@@ -39,9 +39,25 @@
         <p class="mb-1 text-xs text-slate-500">Centro de Custo</p>
         <p class="text-sm font-medium text-slate-200">{{ entry.center || '—' }}</p>
       </div>
-      <div class="rounded-xl bg-white/5 p-3">
+      <!-- Categoria: editável (toque abre o catálogo); transferência não -->
+      <div
+        v-if="!entry.transfer"
+        data-testid="category-edit"
+        role="button"
+        tabindex="0"
+        class="cursor-pointer rounded-xl bg-white/5 p-3 transition-colors hover:bg-white/10"
+        @click="editing = true"
+        @keydown.enter.prevent="editing = true"
+        @keydown.space.prevent="editing = true"
+      >
         <p class="mb-1 text-xs text-slate-500">Categoria</p>
         <p class="text-sm font-medium" :class="entry.category ? 'text-slate-200' : 'text-slate-500'">{{ entry.category || 'Sem categoria' }}</p>
+        <span class="mt-1 block text-[11px] text-brand-300">{{ sourceHint }}</span>
+      </div>
+      <div v-else data-testid="category-locked" class="rounded-xl bg-white/5 p-3">
+        <p class="mb-1 text-xs text-slate-500">Categoria</p>
+        <p class="text-sm font-medium text-slate-200">{{ entry.category || 'Sem categoria' }}</p>
+        <span class="mt-1 block text-[11px] text-slate-500">Transferência: a categoria não é editável nesta versão.</span>
       </div>
       <div class="rounded-xl bg-white/5 p-3">
         <p class="mb-1 text-xs text-slate-500">Tipo</p>
@@ -53,6 +69,8 @@
       </div>
     </div>
 
+    <CategoryEditor v-if="!entry.transfer" :open="editing" :entry="entry" @close="editing = false" />
+
     <div v-if="entry.notes" class="mt-3 rounded-xl bg-white/5 p-3">
       <p class="mb-1 text-xs text-slate-500">Observações</p>
       <p class="text-sm text-slate-300">{{ entry.notes }}</p>
@@ -61,7 +79,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import CategoryEditor from '@/components/lancamentos/CategoryEditor.vue'
+import { categorySourceOf } from '@/modules/categories/rules.js'
 import { formatCurrency, formatDate, today } from '@/utils/formatters.js'
 import { typeBadge } from '@/utils/entryType.js'
 
@@ -72,6 +92,13 @@ const props = defineProps({
 defineEmits(['close'])
 
 const badge = computed(() => typeBadge(props.entry))
+
+const editing = ref(false)
+const sourceHint = computed(() => {
+  const source = categorySourceOf(props.entry)
+  const label = source === 'manual' ? 'escolhida por você' : source === 'rule' ? 'automática (regra)' : source === 'bank' ? 'do extrato' : ''
+  return label ? `Toque para alterar · ${label}` : 'Toque para escolher'
+})
 
 const status = computed(() => {
   const e = props.entry

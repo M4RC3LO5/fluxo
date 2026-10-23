@@ -6,7 +6,7 @@
     @click="$emit('open', entry)"
   >
     <div class="flex items-start justify-between gap-3">
-      <p class="line-clamp-2 min-w-0 flex-1 font-medium leading-snug text-slate-100">{{ entry.description }}</p>
+      <p class="line-clamp-2 min-w-0 flex-1 font-medium leading-snug text-slate-100">{{ shortDescription(entry.description) }}</p>
       <p class="shrink-0 font-mono text-base font-bold text-white">{{ formatCurrency(entry.forecast) }}</p>
     </div>
     <p class="text-xs text-slate-400">{{ formatDate(entry.dueDate) }} · {{ entry.responsible || '—' }}</p>
@@ -28,6 +28,7 @@
 import { computed } from 'vue'
 import { formatCurrency, formatDate, today } from '@/utils/formatters.js'
 import { typeBadge } from '@/utils/entryType.js'
+import { shortDescription } from '@/utils/description.js'
 
 const props = defineProps({ entry: { type: Object, required: true } })
 defineEmits(['open'])

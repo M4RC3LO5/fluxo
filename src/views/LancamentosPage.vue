@@ -221,7 +221,7 @@
 
               <!-- Descrição -->
               <td class="px-4 py-3">
-                <div class="text-slate-200 font-medium truncate max-w-[220px]">{{ entry.description }}</div>
+                <div class="text-slate-200 font-medium truncate max-w-[220px]">{{ shortDescription(entry.description) }}</div>
                 <div v-if="entry.notes" class="text-slate-500 text-xs truncate max-w-[220px] mt-0.5">{{ entry.notes }}</div>
               </td>
 
@@ -333,6 +333,7 @@ import { useFinanceStore } from '@/stores/financeStore'
 import { today } from '@/utils/formatters.js'
 import { monthShortLabel, NO_CATEGORY, NO_CATEGORY_LABEL } from '@/modules/kpis/pfKpis.js'
 import { typeBadge } from '@/utils/entryType.js'
+import { shortDescription } from '@/utils/description.js'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import LancamentoCard from '@/components/lancamentos/LancamentoCard.vue'
 import LancamentoDetail from '@/components/lancamentos/LancamentoDetail.vue'
