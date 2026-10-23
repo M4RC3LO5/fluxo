@@ -60,26 +60,46 @@ function findTableHeader(lines) {
   return null
 }
 
-/** Cabeçalho do documento (acima da tabela, 1ª página). */
-function readSummary(lines, tableY) {
+const LABEL_TOLERANCE = 3 // px: o valor está na mesma altura do rótulo (|dy|)
+
+/**
+ * Cabeçalho do documento (acima da tabela, 1ª página). Rótulo e valor são itens separados e rótulos
+ * diferentes podem cair na mesma linha (Saldo inicial / Saldo final), então lê por PAR rótulo → valor:
+ * o item "R$ ..." imediatamente À DIREITA do rótulo, com |dy| <= 3 px. Também aceita rótulo e valor no mesmo item.
+ */
+function readSummary(lines, tableY, warnings) {
   const head = lines.filter(l => l.y < tableY)
-  const text = (re) => {
-    for (const l of head) {
-      const m = re.exec(norm(l.text))
-      if (m) return m
-    }
-    return null
-  }
+  const items = head.flatMap(l => l.items)
+
   const money = (label) => {
-    const m = text(new RegExp(`^${label}:?\\s*(r\\$\\s*-?\\s*[\\d.,]+)`))
-    return m ? parseBrNumber(m[1]) : NaN
+    const re = new RegExp(`^${label}:?\\s*(r\\$\\s*-?\\s*[\\d.,]+)?$`)
+    for (const it of items) {
+      const m = re.exec(norm(it.str))
+      if (!m) continue
+      if (m[1]) return parseBrNumber(m[1]) // "Entradas: R$ 1,00" num item só
+      // o item imediatamente à direita, na mesma altura, tem que ser o valor (não o de outro rótulo mais adiante)
+      const next = items
+        .filter(v => v !== it && v.x > it.x && Math.abs(v.y - it.y) <= LABEL_TOLERANCE)
+        .sort((x, y) => x.x - y.x)[0]
+      if (next && MONEY_RE.test(next.str)) return parseBrNumber(next.str)
+    }
+    return NaN
   }
-  const period = text(/^periodo:?\s*de\s+(\d{2}-\d{2}-\d{4})\s+al\s+(\d{2}-\d{2}-\d{4})/)
+
+  // período: as duas datas na altura de "Periodo", em qualquer ordem dos itens
+  let period = null
+  const label = items.find(i => norm(i.str).includes('periodo'))
+  if (label) {
+    const band = items.filter(i => Math.abs(i.y - label.y) <= LABEL_TOLERANCE).sort((a, b) => a.x - b.x)
+    const dates = band.map(i => i.str).join(' ').match(/\d{2}-\d{2}-\d{4}/g) || []
+    if (dates.length >= 2) period = [isoDate(dates[0]), isoDate(dates[1])]
+  }
+
   const cpfIdx = head.findIndex(l => /\bcpf\b/.test(norm(l.text)))
   const summary = {
     holder: cpfIdx > 0 ? head[cpfIdx - 1].text.trim() : '',
-    periodStart: period ? isoDate(period[1]) : null,
-    periodEnd: period ? isoDate(period[2]) : null,
+    periodStart: period ? period[0] : null,
+    periodEnd: period ? period[1] : null,
     entradas: money('entradas'),
     saidas: money('saidas'),
     saldoInicial: money('saldo inicial'),
@@ -89,6 +109,7 @@ function readSummary(lines, tableY) {
     'Saldo inicial': summary.saldoInicial, 'Saldo final': summary.saldoFinal })
     .filter(([, v]) => v === null || Number.isNaN(v)).map(([k]) => k)
   if (missing.length) throw new Error(`Cabeçalho do extrato incompleto (${missing.join(', ')}). Nada foi importado.`)
+  if (!summary.holder) warnings.push('Titular não identificado no cabeçalho: Pix entre contas próprias não serão marcados como transferência.')
   return summary
 }
 
@@ -142,7 +163,7 @@ export function parseMercadoPagoItems(pages, { importId = null } = {}) {
   })
   const firstHeader = pageLines.map((l, p) => ({ l, p })).find(({ l }) => findTableHeader(l))
   if (!firstHeader) throw new Error('Tabela "DETALHE DOS MOVIMENTOS" não encontrada. Nada foi importado.')
-  const summary = readSummary(pageLines[firstHeader.p], findTableHeader(pageLines[firstHeader.p]).y)
+  const summary = readSummary(pageLines[firstHeader.p], findTableHeader(pageLines[firstHeader.p]).y, warnings)
 
   // 2) âncoras (data + ID + valor + saldo) e fragmentos de descrição de cada página
   const anchors = [] // { page, y, dueDate, id, amount, balance, frags: [{ key, text }] }
