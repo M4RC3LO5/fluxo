@@ -43,7 +43,7 @@ test('Arquivo com extensão errada é recusado', async ({ page }) => {
   await expect(page.getByText('Histórico de Importações')).toBeHidden() // nada foi importado
 })
 
-for (const [nome, id] of [['Mercado Pago', 'mercadopago'], ['Santander', 'santander']]) {
+for (const [nome, id] of [['Santander', 'santander']]) {
   test(`Fontes ainda não disponíveis: ${nome}`, async ({ page }) => {
     await expect(card(page, id)).toContainText('Em breve')
     await expect(card(page, id)).toHaveAttribute('aria-disabled', 'true')

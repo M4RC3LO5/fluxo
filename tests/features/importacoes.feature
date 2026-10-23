@@ -34,7 +34,6 @@ Funcionalidade: Importação em um passo
 
     Exemplos:
       | fonte        |
-      | Mercado Pago |
       | Santander    |
 
   Cenário: Arrastar o arquivo sobre o card importa
