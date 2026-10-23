@@ -8,6 +8,9 @@ export default defineConfig({
     vue(),
     tailwindcss(),
   ],
+  test: {
+    include: ['tests/unit/**/*.test.js']
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

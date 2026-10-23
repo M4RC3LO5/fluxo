@@ -9,12 +9,14 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:e2e:mobile": "playwright test --project=mobile",
-    "test:e2e:desktop": "playwright test --project=desktop"
+    "test:e2e:desktop": "playwright test --project=desktop",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "chart.js": "^4.4.0",
     "chartjs-plugin-datalabels": "^2.2.0",
     "idb-keyval": "^6.3.0",
+    "papaparse": "^5.7.0",
     "pinia": "^2.1.7",
     "vue": "^3.4.0",
     "vue-router": "^4.2.5",
@@ -25,6 +27,7 @@
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "tailwindcss": "^4.0.0",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "vitest": "^2.1.9"
   }
 }
