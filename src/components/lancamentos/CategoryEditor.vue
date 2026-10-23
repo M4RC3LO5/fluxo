@@ -1,32 +1,8 @@
 <template>
   <BottomSheet :open="open" title="Alterar categoria" :subtitle="shortDescription(entry.description)" @close="close">
-    <!-- 1) escolher a categoria (catálogo filtrado pelo tipo do lançamento) -->
+    <!-- 1) escolher a categoria (catálogo filtrado pelo tipo do lançamento, mais "Não é gasto" e "Nova categoria") -->
     <div v-if="step === 'pick'" data-testid="category-picker">
-      <input
-        ref="searchInput"
-        v-model="query"
-        type="search"
-        data-testid="category-search"
-        placeholder="Buscar categoria"
-        autocomplete="off"
-        class="mb-3 min-h-[44px] w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
-      />
-      <p v-if="options.length === 0" class="py-6 text-center text-sm text-slate-500">Nenhuma categoria encontrada.</p>
-      <ul class="grid grid-cols-1 gap-1 sm:grid-cols-2">
-        <li v-for="c in options" :key="c.name">
-          <button
-            type="button"
-            data-testid="category-option"
-            class="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm transition-colors hover:bg-white/10"
-            :class="c.name === entry.category ? 'bg-brand-600/20 text-white' : 'text-slate-200'"
-            @click="choose(c.name)"
-          >
-            <span class="text-lg" aria-hidden="true">{{ c.icon }}</span>
-            <span class="min-w-0 flex-1 truncate">{{ c.name }}</span>
-            <span v-if="c.name === entry.category" class="text-xs text-brand-300">atual</span>
-          </button>
-        </li>
-      </ul>
+      <CategoryPicker ref="picker" :type="entry.type" :selected="entry.category || ''" prefix="category" show-current @pick="choose" />
     </div>
 
     <!-- 2) ensinar: usar sempre essa categoria para descrições parecidas? -->
@@ -62,12 +38,12 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import CategoryPicker from '@/components/lancamentos/CategoryPicker.vue'
 import { useFinanceStore } from '@/stores/financeStore.js'
 import { useRulesStore } from '@/stores/rulesStore.js'
-import { categoriesFor } from '@/modules/categories/catalog.js'
+import { isTransferCategory } from '@/modules/categories/catalog.js'
 import { normalizeForMatch, countChanges } from '@/modules/categories/rules.js'
 import { shortDescription } from '@/utils/description.js'
-import { normalizeText } from '@/utils/search.js'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -79,26 +55,19 @@ const financeStore = useFinanceStore()
 const rulesStore = useRulesStore()
 
 const step = ref('pick') // 'pick' | 'rule'
-const query = ref('')
 const chosen = ref('')
 const pattern = ref('')
 const saving = ref(false)
-const searchInput = ref(null)
+const picker = ref(null)
 
 // a cada abertura volta para a escolha
 watch(() => props.open, async (isOpen) => {
   if (!isOpen) return
   step.value = 'pick'
-  query.value = ''
   chosen.value = ''
   saving.value = false
   await nextTick()
-  searchInput.value?.focus()
-})
-
-const options = computed(() => {
-  const q = normalizeText(query.value).trim()
-  return categoriesFor(props.entry.type).filter(c => !q || normalizeText(c.name).includes(q))
+  picker.value?.reset()
 })
 
 async function choose(name) {
@@ -113,7 +82,7 @@ const normalizedPattern = computed(() => normalizeForMatch(pattern.value))
 // prévia ao vivo: quantos lançamentos existentes a nova regra atualizaria
 const impact = computed(() => {
   if (step.value !== 'rule' || !normalizedPattern.value) return 0
-  const rule = { id: 'preview', pattern: normalizedPattern.value, category: chosen.value, origin: 'user', createdAt: '' }
+  const rule = { id: 'preview', pattern: normalizedPattern.value, category: chosen.value, origin: 'user', createdAt: '', ...(isTransferCategory(chosen.value) ? { action: 'transfer' } : {}) }
   return countChanges(financeStore.entries, [...rulesStore.rules, rule])
 })
 const impactLabel = computed(() => {

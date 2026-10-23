@@ -82,7 +82,8 @@
         @click="markTransfer">Marcar como transferência entre contas</button>
     </div>
 
-    <CategoryEditor v-if="!entry.transfer" :open="editing" :entry="entry" @close="editing = false" />
+    <!-- fica montado enquanto edita: escolher "Não é gasto" torna o lançamento transferência e o passo da regra ainda precisa dele -->
+    <CategoryEditor v-if="!entry.transfer || editing" :open="editing" :entry="entry" @close="editing = false" />
 
     <div v-if="entry.notes" class="mt-3 rounded-xl bg-white/5 p-3">
       <p class="mb-1 text-xs text-slate-500">Observações</p>
@@ -121,6 +122,7 @@ const transferNote = computed(() => {
   const source = transferSourceOf(e)
   if (source === 'name') return 'Transferência entre contas próprias (detectada por nome)'
   if (source === 'manual') return 'Transferência entre contas próprias (marcada por você)'
+  if (source === 'rule') return 'Não é gasto (marcado por uma regra sua)'
   if (source === 'pair') {
     const partner = financeStore.entries.find(x => x.id === e.pairedWith)
     return partner

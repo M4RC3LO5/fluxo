@@ -5,6 +5,7 @@ import { today } from '@/utils/formatters.js'
 import { buildSearchIndex, matches, normalizeText } from '@/utils/search.js'
 import { dedupKey } from '@/modules/importers/dedup.js'
 import { applyRules as applyCategoryRules, recalculateRuleCategories } from '@/modules/categories/rules.js'
+import { isTransferCategory } from '@/modules/categories/catalog.js'
 import { detectOwnTransfers, undoTransfer, markTransferManual } from '@/modules/transfers/ownTransfers.js'
 
 export const useFinanceStore = defineStore('finance', () => {
@@ -136,10 +137,26 @@ export const useFinanceStore = defineStore('finance', () => {
     return persist.flush().then(() => ({ added: fresh.length, skipped: list.length - fresh.length }))
   }
 
-  /** Escolha manual de categoria: vira categorySource 'manual' e nenhuma regra mexe mais nele. */
+  /**
+   * Escolha manual de categoria: vira categorySource 'manual' e nenhuma regra mexe mais nele.
+   * Categoria de "Não é gasto" (Pagamento de fatura, Transferência entre contas, Investimentos) também marca
+   * transfer true (transferSource 'manual'): o lançamento sai de Entradas/Saídas. Escolher uma categoria comum
+   * num lançamento que era transferência (manual/regra) devolve-o a Entrada/Saída.
+   */
   function setEntryCategory(id, category) {
     const entry = entries.value.find(e => e.id === id)
     if (!entry) return Promise.resolve(false)
+    if (isTransferCategory(category)) {
+      if (entry.type === 'in' || entry.type === 'out') {
+        entry.transfer = true
+        entry.transferSource = 'manual'
+        entry.pairedWith = null
+      }
+    } else if (entry.transfer && ['manual', 'rule'].includes(entry.transferSource)) {
+      entry.transfer = false
+      entry.transferSource = 'manual'
+      entry.pairedWith = null
+    }
     entry.category = category
     entry.categorySource = 'manual'
     return persist.flush().then(() => true)
@@ -147,15 +164,8 @@ export const useFinanceStore = defineStore('finance', () => {
 
   /** Reaplica as regras a todos os lançamentos elegíveis (nunca bank, manual ou transferência). Devolve quantos mudaram. */
   function applyRules(rules) {
-    const next = applyCategoryRules(entries.value, rules)
-    let changed = 0
-    next.forEach((n, i) => {
-      if (n !== entries.value[i]) {
-        Object.assign(entries.value[i], { category: n.category, categorySource: n.categorySource }) // no lugar: o detalhe aberto acompanha
-        changed++
-      }
-    })
-    return persist.flush().then(() => changed)
+    // no lugar: o detalhe aberto acompanha
+    return saved(syncTransfers(applyCategoryRules(entries.value, rules)))
   }
 
   // aplica no lugar o que as funções puras de transferência mudaram (assim o detalhe aberto acompanha)
@@ -190,6 +200,22 @@ export const useFinanceStore = defineStore('finance', () => {
     return saved(syncTransfers(markTransferManual(entries.value, id)))
   }
 
+  /** Troca o nome de uma categoria própria nos lançamentos. Devolve quantos mudaram. */
+  function renameCategory(oldName, newName) {
+    const key = normalizeText(oldName)
+    let changed = 0
+    for (const e of entries.value) {
+      if (e.category && normalizeText(e.category) === key) { e.category = newName; changed++ }
+    }
+    return saved(changed).then(() => changed)
+  }
+
+  /** Quantos lançamentos usam a categoria (sem acento/caixa). */
+  function countByCategory(name) {
+    const key = normalizeText(name)
+    return entries.value.reduce((n, e) => n + (e.category && normalizeText(e.category) === key ? 1 : 0), 0)
+  }
+
   function removeByImport(importId) {
     entries.value = entries.value.filter(e => e.importId !== importId)
     return persist.flush()
@@ -206,6 +232,6 @@ export const useFinanceStore = defineStore('finance', () => {
     forecastVsPaidDiff, paidCount, pendingCount,
     totalByResponsible, totalByPayer, totalByCenter, upcomingDue,
     filteredEntries,
-    addEntries, removeByImport, setEntryCategory, applyRules, recalculateRules, applyOwnTransfers, undoOwnTransfer, markOwnTransfer, hydrate
+    addEntries, removeByImport, setEntryCategory, renameCategory, countByCategory, applyRules, recalculateRules, applyOwnTransfers, undoOwnTransfer, markOwnTransfer, hydrate
   }
 })

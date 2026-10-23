@@ -53,6 +53,48 @@
       <p v-else data-testid="ignored-empty" class="rounded-xl bg-white/5 px-4 py-3 text-sm text-slate-400">Nenhum item ignorado.</p>
     </section>
 
+    <!-- Minhas categorias (próprias) -->
+    <section class="glass-card mx-auto max-w-2xl space-y-5 p-5 sm:p-6" data-testid="categories-section">
+      <div>
+        <h2 class="text-sm font-semibold text-white">Minhas categorias</h2>
+        <p class="mt-1 text-xs text-slate-400">
+          Categorias que você criou ao categorizar. Renomear atualiza os lançamentos e as regras que a usam;
+          só dá para remover uma categoria que nenhum lançamento nem regra use.
+        </p>
+      </div>
+
+      <ul v-if="settings.customCategories.length" data-testid="custom-categories-list" class="space-y-2">
+        <li v-for="c in settings.customCategories" :key="c.name" data-testid="custom-category"
+          class="space-y-2 rounded-xl bg-white/5 px-4 py-2">
+          <div class="flex min-h-[44px] items-center justify-between gap-3">
+            <div class="min-w-0">
+              <p class="break-words text-sm font-medium text-slate-100" data-testid="custom-category-name">{{ c.name }}</p>
+              <p class="text-xs text-slate-500">{{ c.kind === 'in' ? 'Entrada' : 'Saída' }}</p>
+            </div>
+            <div class="flex shrink-0 items-center gap-1">
+              <button type="button" data-testid="custom-category-rename" :aria-label="`Renomear ${c.name}`"
+                class="min-h-[44px] rounded-lg px-3 text-xs font-semibold text-brand-300 transition-colors hover:bg-white/10"
+                @click="startRename(c)">Renomear</button>
+              <button type="button" data-testid="custom-category-remove" :aria-label="`Remover ${c.name}`"
+                class="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white/10 hover:text-rose-400"
+                @click="removeCategory(c)">✕</button>
+            </div>
+          </div>
+          <form v-if="renaming === c.name" class="flex flex-col gap-2 sm:flex-row" @submit.prevent="confirmRename(c)">
+            <input v-model="renameDraft" type="text" data-testid="custom-category-input" autocomplete="off" :aria-label="`Novo nome para ${c.name}`"
+              class="min-h-[44px] flex-1 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:border-brand-500 focus:outline-none" />
+            <button type="submit" data-testid="custom-category-save" :disabled="!renameDraft.trim()"
+              class="min-h-[44px] rounded-xl bg-brand-600 px-5 text-sm font-semibold text-white hover:bg-brand-500 disabled:opacity-40">Salvar</button>
+            <button type="button" class="min-h-[44px] rounded-xl border border-white/10 px-4 text-sm text-slate-300 hover:bg-white/5" @click="renaming = ''">Cancelar</button>
+          </form>
+        </li>
+      </ul>
+      <p v-else data-testid="custom-categories-empty" class="rounded-xl bg-white/5 px-4 py-3 text-sm text-slate-400">
+        Você ainda não criou categorias. Em qualquer seletor de categoria, use “Nova categoria”.
+      </p>
+      <p v-if="categoryStatus" data-testid="categories-status" role="status" class="text-xs" :class="categoryError ? 'text-rose-300' : 'text-emerald-300'">{{ categoryStatus }}</p>
+    </section>
+
     <!-- Minhas regras de categoria -->
     <section class="glass-card mx-auto max-w-2xl space-y-5 p-5 sm:p-6" data-testid="rules-section">
       <div>
@@ -67,7 +109,7 @@
         <li v-for="rule in rulesStore.userRules" :key="rule.id" data-testid="rule-item"
           class="flex min-h-[44px] items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-2">
           <div class="min-w-0">
-            <p class="break-words text-sm text-slate-100"><span class="font-mono" data-testid="rule-pattern-text">{{ rule.pattern }}</span> <span class="text-slate-500">→</span> <span class="font-semibold" data-testid="rule-category">{{ rule.category }}</span></p>
+            <p class="break-words text-sm text-slate-100"><span class="font-mono" data-testid="rule-pattern-text">{{ rule.pattern }}</span> <span class="text-slate-500">→</span> <span class="font-semibold" data-testid="rule-category">{{ rule.category }}</span><span v-if="rule.action === 'transfer'" class="ml-1 text-xs text-slate-400">(não é gasto)</span></p>
             <p data-testid="rule-matches" class="text-xs text-slate-500">casa {{ matchCount(rule) }} {{ matchCount(rule) === 1 ? 'lançamento' : 'lançamentos' }} hoje</p>
           </div>
           <button type="button" data-testid="rule-remove" :aria-label="`Remover a regra ${rule.pattern}`"
@@ -105,6 +147,7 @@ import { useFinanceStore } from '@/stores/financeStore.js'
 import { SEED_RULES } from '@/modules/categories/seedRules.js'
 import { matchRule, isRuleEligible, compatible } from '@/modules/categories/rules.js'
 import { refreshOwnTransfers } from '@/modules/transfers/transferService.js'
+import { renameCustomCategory, removeCustomCategory, usageLabel } from '@/modules/categories/categoryService.js'
 
 const settings = useSettingsStore()
 const rulesStore = useRulesStore()
@@ -118,6 +161,29 @@ async function add() {
   const added = await settings.addHolderName(draft.value)
   draft.value = ''
   status.value = added ? `Nome adicionado. ${resumo(await refreshOwnTransfers())}` : 'Esse nome já está na lista.'
+}
+
+// ─── Minhas categorias ──────────────────────────────────────────────────────
+const renaming = ref('')
+const renameDraft = ref('')
+const categoryStatus = ref('')
+const categoryError = ref(false)
+const say = (text, error = false) => { categoryStatus.value = text; categoryError.value = error }
+
+function startRename(c) {
+  renaming.value = c.name
+  renameDraft.value = c.name
+}
+async function confirmRename(c) {
+  const r = await renameCustomCategory(c.name, renameDraft.value)
+  if (!r.ok) return say(r.error, true)
+  renaming.value = ''
+  say(`Categoria renomeada para ${r.name}. ${usageLabel({ entries: r.entries, rules: r.rules }) ? `Atualizou ${usageLabel({ entries: r.entries, rules: r.rules })}.` : 'Nenhum lançamento nem regra a usava.'}`)
+}
+async function removeCategory(c) {
+  const r = await removeCustomCategory(c.name)
+  if (!r.ok) return say(`Não dá para remover “${c.name}”: ${usageLabel(r)} ${r.entries + r.rules === 1 ? 'usa' : 'usam'} esta categoria. Troque a categoria deles antes de remover.`, true)
+  say(`Categoria “${c.name}” removida.`)
 }
 
 // ─── Minhas regras ──────────────────────────────────────────────────────────
