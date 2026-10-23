@@ -45,7 +45,11 @@
       </div>
       <div class="rounded-xl bg-white/5 p-3">
         <p class="mb-1 text-xs text-slate-500">Tipo</p>
-        <p class="text-sm font-medium" :class="entry.type === 'in' ? 'text-emerald-400' : entry.type === 'out' ? 'text-rose-400' : 'text-slate-500'">{{ entry.type === 'in' ? 'Entrada' : entry.type === 'out' ? 'Saída' : '—' }}</p>
+        <p class="text-sm font-medium" :class="badge.text">{{ badge.label }}</p>
+      </div>
+      <div v-if="entry.installment" class="rounded-xl bg-white/5 p-3">
+        <p class="mb-1 text-xs text-slate-500">Parcelamento</p>
+        <p class="text-sm font-medium text-slate-200">Parcela {{ entry.installment.current }} de {{ entry.installment.total }}</p>
       </div>
     </div>
 
@@ -59,12 +63,15 @@
 <script setup>
 import { computed } from 'vue'
 import { formatCurrency, formatDate, today } from '@/utils/formatters.js'
+import { typeBadge } from '@/utils/entryType.js'
 
 const props = defineProps({
   entry: { type: Object, required: true },
   showHeader: { type: Boolean, default: true }
 })
 defineEmits(['close'])
+
+const badge = computed(() => typeBadge(props.entry))
 
 const status = computed(() => {
   const e = props.entry

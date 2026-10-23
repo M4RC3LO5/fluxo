@@ -16,9 +16,9 @@
       </span>
       <span
         data-testid="type-badge"
-        :class="typeBadge(entry.type).cls"
+        :class="typeBadge(entry).cls"
         class="rounded-lg px-2 py-1 text-xs font-medium"
-      >{{ typeBadge(entry.type).label }}</span>
+      >{{ typeBadge(entry).label }}</span>
       <span v-if="entry.center" class="rounded-lg bg-white/5 px-2 py-1 text-xs text-slate-400">{{ entry.center }}</span>
     </div>
   </button>

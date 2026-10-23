@@ -35,7 +35,7 @@ export function buildSearchIndex(entry, today) {
     entry.center,
     entry.notes,
     entry.category,
-    entry.type === 'in' ? 'entrada receita' : entry.type === 'out' ? 'saída despesa' : '',
+    entry.transfer ? 'transferência' : entry.type === 'in' ? 'entrada receita' : entry.type === 'out' ? 'saída despesa' : '',
     statusLabel(entry, today),
     dateForms(entry.dueDate).join(' '),
     ...money(entry.forecast),

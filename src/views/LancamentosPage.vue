@@ -247,10 +247,10 @@
               <td class="px-4 py-3 whitespace-nowrap">
                 <span
                   data-testid="type-badge"
-                  :class="typeBadge(entry.type).cls"
+                  :class="typeBadge(entry).cls"
                   class="text-xs px-2 py-1 rounded-lg font-medium"
                 >
-                  {{ typeBadge(entry.type).label }}
+                  {{ typeBadge(entry).label }}
                 </span>
               </td>
             </tr>
