@@ -92,12 +92,13 @@ test.describe('Visão Pessoal', () => {
   test('rankings: categoria e descrição (top 5, valor e % das Saídas)', async ({ page }) => {
     const categorias = page.getByTestId('pf-rank-category').getByTestId('pf-rank-row')
     await expect(categorias).toHaveCount(4)
+    // "Supermercado Bom Preço" (regra seed) e "mercado" (coluna do banco) são a mesma categoria: Mercado
     expect(await text(categorias.nth(0))).toContain('Sem categoria')
-    expect(await text(categorias.nth(0))).toContain('R$ 1.835,40')
-    expect(await text(categorias.nth(0))).toContain('80,1%')
-    expect(await text(categorias.nth(1))).toContain('mercado')
-    expect(await text(categorias.nth(1))).toContain('R$ 350,00')
-    expect(await text(categorias.nth(1))).toContain('15,3%')
+    expect(await text(categorias.nth(0))).toContain('R$ 1.304,90')
+    expect(await text(categorias.nth(0))).toContain('57%')
+    expect(await text(categorias.nth(1))).toContain('Mercado')
+    expect(await text(categorias.nth(1))).toContain('R$ 880,50')
+    expect(await text(categorias.nth(1))).toContain('38,4%')
 
     const descricoes = page.getByTestId('pf-rank-description').getByTestId('pf-rank-row')
     await expect(descricoes).toHaveCount(5)
@@ -156,14 +157,14 @@ test.describe('Visão Pessoal', () => {
 
     test('categoria: com nome e "Sem categoria"', async ({ page }) => {
       const categorias = page.getByTestId('pf-rank-category').getByTestId('pf-rank-row')
-      await categorias.nth(1).click() // mercado
-      await expect(chips(page)).toHaveText(['out/2026 ×', 'Saídas ×', 'Categoria: mercado ×'])
-      await expect(rows(page)).toHaveCount(2)
+      await categorias.nth(1).click() // Mercado
+      await expect(chips(page)).toHaveText(['out/2026 ×', 'Saídas ×', 'Categoria: Mercado ×'])
+      await expect(rows(page)).toHaveCount(4) // 2 supermercados (regra) + 2 hortifruti (banco)
 
       await page.goBack()
       await page.getByTestId('pf-rank-category').getByTestId('pf-rank-row').nth(0).click() // Sem categoria
       await expect(chips(page)).toHaveText(['out/2026 ×', 'Saídas ×', 'Categoria: Sem categoria ×'])
-      await expect(rows(page)).toHaveCount(5)
+      await expect(rows(page)).toHaveCount(3) // aluguel, academia e a compra sem categoria
     })
 
     test('descrição: filtra pela busca, juntando as parcelas', async ({ page }) => {

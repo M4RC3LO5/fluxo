@@ -111,7 +111,29 @@ describe('topExpensesByCategory', () => {
   it('sem saídas → vazio', () => expect(topExpensesByCategory([e({ type: 'in' })], '2026-10')).toEqual([]))
 })
 
+describe('topExpensesByCategory: nomes do catálogo', () => {
+  it('"mercado" (banco) e "Mercado" (catálogo) viram uma categoria só, com o nome do catálogo', () => {
+    const r = topExpensesByCategory([e({ forecast: 100, category: 'mercado' }), e({ forecast: 50, category: 'Mercado' }), e({ forecast: 10, category: 'restaurante' })], '2026-10')
+    expect(r.map(x => [x.name, x.total, x.count])).toEqual([['Mercado', 150, 2], ['restaurante', 10, 1]])
+  })
+  it('ignora acento: "Saude" e "Saúde"', () => {
+    const r = topExpensesByCategory([e({ forecast: 5, category: 'Saude' }), e({ forecast: 5, category: 'Saúde' })], '2026-10')
+    expect(r).toHaveLength(1)
+    expect(r[0].name).toBe('Saúde')
+  })
+})
+
 describe('topExpensesByDescription', () => {
+  it('encurta CPF mascarado e dados da conta antes de agrupar', () => {
+    const lista = [
+      e({ description: 'Transferência enviada pelo Pix - MARIA SOUZA - •••.111.222-•• - BANCO X Agência: 1 Conta: 2', forecast: 100 }),
+      e({ description: 'Transferência enviada pelo Pix - MARIA SOUZA - •••.111.222-•• - BANCO Y Agência: 9 Conta: 8', forecast: 50 })
+    ]
+    const r = topExpensesByDescription(lista, '2026-10')
+    expect(r).toHaveLength(1)
+    expect(r[0]).toMatchObject({ name: 'Transferência enviada pelo Pix - MARIA SOUZA', total: 150, count: 2 })
+  })
+
   it('agrupa sem acento/caixa/espaços e sem o sufixo " - Parcela N/M"', () => {
     const lista = [
       e({ description: 'Loja Z - Parcela 2/10', forecast: 100 }),
