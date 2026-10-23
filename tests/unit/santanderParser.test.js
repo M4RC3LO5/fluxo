@@ -188,6 +188,70 @@ describe('parseSantanderItems — conferência com os totais impressos', () => {
   })
 })
 
+// ─── regressões do extrato real ──────────────────────────────────────────
+describe('títulos de seção em x maior que 40 (coordenadas reais)', () => {
+  // x/y reais dos títulos: Resumo 62,4 · Conta Corrente 70,8 · Movimentação 34 · Comprovantes 70,8 · Investimentos 62,4 · Pacote 62,4
+  const resumoReal = (opts) => resumo(opts).map(i => (i.str.startsWith('Resumo') ? { ...i, x: 62.4, y: 293.3 } : i))
+  // y real de "Conta Corrente" = 537,5; "Movimentação", o cabeçalho e o SALDO EM vêm logo abaixo
+  const tabelaReal = (inicial) => tableTop(537.5, inicial).map(i => (i.str === 'Conta Corrente' ? { ...i, x: 70.8 } : i))
+  const secoesDepois = () => [
+    item('Saldos por Período', 34, 690), item('01/01 a 31/01', 65, 704), right('9,99', 462, 704),
+    item('Comprovantes de Pagamento', 70.8, 716), item('02/01', 34, 726), item('PAGAMENTO BOLETO', 65, 726), item('-', 312, 726), right('9,99', 462, 726),
+    item('Investimentos', 62.4, 738), item('02/01', 34, 748), item('APLICACAO CDB', 65, 748), item('-', 312, 748), right('9,99', 462, 748),
+    item('Pacote de Serviços', 62.4, 760), item('Pacote Exemplo Plus', 65, 770), right('38,90', 462, 770),
+    item('Fale Conosco', 70.8, 785), item('SAC 0800 000 0000', 65, 795)
+  ]
+
+  it('Resumo (x 62,4) e Conta Corrente (x 70,8) são reconhecidos', () => {
+    const pages = [frame(1), [...frame(2), ...resumoReal(), ...tabelaReal(100),
+      ...mov(605, { data: '02/01', lines: ['PIX RECEBIDO', 'CARLOS TERCEIRO LIMA'], valor: 50 }),
+      ...mov(630, { data: '10/01', lines: ['COMPRA MERCADO'], valor: -30, saldo: 120 }), ...closing(655, 120)]]
+    const { entries, summary } = parseSantanderItems(pages)
+    expect(entries).toHaveLength(2)
+    expect(summary).toMatchObject({ holder: HOLDER, saldoInicial: 100, totalCreditos: 50, totalDebitos: 30, saldoFinal: 120 })
+  })
+
+  it('seções ignoradas com títulos em x 62,4 / 70,8 não entram', () => {
+    const pages = [frame(1), [...frame(2), ...resumoReal(), ...tabelaReal(100),
+      ...mov(605, { data: '02/01', lines: ['PIX RECEBIDO', 'CARLOS TERCEIRO LIMA'], valor: 50 }),
+      ...mov(630, { data: '10/01', lines: ['COMPRA MERCADO'], valor: -30, saldo: 120 }), ...closing(655, 120), ...secoesDepois()]]
+    const { entries, warnings } = parseSantanderItems(pages)
+    expect(entries).toHaveLength(2)
+    expect(warnings).toEqual([])
+  })
+
+  it('descrição que começa em x 65 com valor na linha não é título', () => {
+    const pages = [frame(1), [...frame(2), ...resumoReal(), ...tabelaReal(100),
+      ...mov(605, { data: '02/01', lines: ['INVESTIMENTOS RESGATE'], valor: 50 }), // começa como um título ignorado, mas tem valor
+      ...mov(630, { data: '10/01', lines: ['COMPRA MERCADO'], valor: -30, saldo: 120 }), ...closing(655, 120)]]
+    expect(parseSantanderItems(pages).entries.map(e => e.description)).toEqual(['INVESTIMENTOS RESGATE', 'COMPRA MERCADO'])
+  })
+})
+
+describe('saldo zero é um saldo, não "ausente"', () => {
+  // saldo inicial 0,00 · +50 · -50 · fechamento 0,00; depois a Poupança, com a própria "Movimentação" e SALDO ATUAL 0,55
+  const zero = (poupanca) => [frame(1), [...frame(2), ...resumo({ inicial: 0, creditos: 50, debitos: 50, final: 0 }), ...tableTop(450, 0),
+    ...mov(515, { data: '02/01', lines: ['PIX RECEBIDO', 'CARLOS TERCEIRO LIMA'], valor: 50, saldo: 50 }),
+    ...mov(540, { data: '10/01', lines: ['COMPRA MERCADO'], valor: -50, saldo: 0 }), ...closing(570, 0),
+    item('Poupança', 34, 620), item('Movimentação', 34, 634), ...tableHeader(648), ...poupanca]]
+
+  it('saldo inicial 0,00 e fechamento 0,00: a Poupança não reabre a tabela', () => {
+    const pages = zero([item('SALDO ANTERIOR', 65, 662), right('0,00', 545, 662),
+      item('31/01', 34, 676), item('SALDO ATUAL', 65, 676), item('-', 312, 676), right('0,55', 462, 676)])
+    const { entries, warnings, summary } = parseSantanderItems(pages)
+    expect(entries.map(e => e.description)).toEqual(['PIX RECEBIDO - CARLOS TERCEIRO LIMA', 'COMPRA MERCADO'])
+    expect(summary).toMatchObject({ saldoInicial: 0, saldoFinal: 0 })
+    expect(warnings).toEqual([])
+  })
+
+  it('movimento de verdade na Poupança: aviso, e continua sem importar', () => {
+    const pages = zero([item('05/01', 34, 662), item('CREDITO ANIVERSARIO', 65, 662), item('-', 312, 662), right('1,23', 462, 662)])
+    const { entries, warnings } = parseSantanderItems(pages)
+    expect(entries).toHaveLength(2)
+    expect(warnings).toEqual(['Movimentos da poupança não foram importados'])
+  })
+})
+
 // ─── contra o PDF sintético (pdfjs no Node) ──────────────────────────────
 describe('PDF sintético', () => {
   const load = async (nome) => {
@@ -212,6 +276,16 @@ describe('PDF sintético', () => {
     expect(entries.find(e => e.description === 'PIX RECEBIDO - CARLOS TERCEIRO LIMA')).toMatchObject({ transfer: false, type: 'in' })
     expect(entries.find(e => e.description.startsWith('REMUNERACAO'))).toMatchObject({ category: 'Rendimentos', transfer: false })
     expect(entries.find(e => e.description.startsWith('OPERACOES'))).toMatchObject({ category: 'Financiamento imobiliário', type: 'out' })
+  })
+
+  it('fecha com saldo zero e a Poupança (SALDO ATUAL 0,55) não vira lançamento', async () => {
+    const { pages } = await load('santander_saldo_zero.pdf')
+    const { entries, summary, warnings } = parseSantanderItems(pages)
+    expect(summary.saldoFinal).toBe(0)
+    expect(entries).toHaveLength(13)
+    expect(entries.some(e => /SALDO (ATUAL|ANTERIOR)/.test(e.description))).toBe(false)
+    expect(entries[12]).toMatchObject({ dueDate: '2026-01-31', forecast: 1144.05, type: 'out' })
+    expect(warnings).toEqual([])
   })
 
   it('recusa o extrato com Total de Débitos errado', async () => {

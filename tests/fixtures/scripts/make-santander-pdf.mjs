@@ -27,19 +27,25 @@ const MOVES = [
   [null, ['PIX RECEBIDO', HOLDER_TRUNC], '-', 2655.88, true]
 ]
 const PAGE2_MOVES = 5
+const sum = (list) => list.reduce((acc, m) => acc + Math.round(m[3] * 100), 0) / 100
+// variante "saldo zero": um último movimento zera a conta, e o extrato fecha com SALDO EM 31/01 0,00
+const movesDe = (zero) => zero
+  ? [...MOVES, ['31/01', ['TED PARA OUTRA CONTA', 'EMPRESA EXEMPLO LTDA'], '-', -Math.round((SALDO_INICIAL + sum(MOVES)) * 100) / 100, true]]
+  : MOVES
 
 const fmt = (n) => Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const signed = (n) => fmt(n) + (n < 0 ? '-' : '') // sinal NO FIM
 
-function build(file, { debitosImpressos } = {}) {
+function build(file, { debitosImpressos, zero = false } = {}) {
+  const MOVES = movesDe(zero) // eslint-disable-line no-shadow
   const doc = new PDFDocument({ size: 'A4', margin: 0, info: { Title: 'Extrato sintético', CreationDate: new Date('2026-10-22T12:00:00Z') } })
   doc.pipe(createWriteStream(join(OUT, file)))
   // y = baseline como o pdfjs informa (de cima para baixo); pdfkit posiciona pelo topo
   const t = (str, x, y, size = 8, font = 'Helvetica') => doc.font(font).fontSize(size).text(str, x, y - size * 0.7222, { lineBreak: false })
   const right = (str, xr, y, size = 8) => t(str, xr - doc.font('Helvetica').fontSize(size).widthOfString(str), y, size)
 
-  const creditos = MOVES.filter(m => m[3] > 0).reduce((s, m) => s + Math.round(m[3] * 100), 0) / 100
-  const debitos = MOVES.filter(m => m[3] < 0).reduce((s, m) => s + Math.round(m[3] * 100), 0) / 100
+  const creditos = sum(MOVES.filter(m => m[3] > 0))
+  const debitos = sum(MOVES.filter(m => m[3] < 0))
   const saldoFinal = Math.round((SALDO_INICIAL * 100) + creditos * 100 + debitos * 100) / 100
 
   const pageFrame = (n, total) => {
@@ -68,7 +74,7 @@ function build(file, { debitosImpressos } = {}) {
 
   // ─ página 2: Resumo + início da movimentação
   doc.addPage(); pageFrame(2, 3)
-  t('Resumo - janeiro/2026', 34, 290, 10, 'Helvetica-Bold')
+  t('Resumo - janeiro/2026', 62.4, 293.3, 10, 'Helvetica-Bold') // títulos de seção ficam entre x 34 e 71
   t('Nome', 34, 316, 8); t(HOLDER, 34, 325, 8)
   const linhaResumo = (rotulo, valor, y, indent = 34) => { t(rotulo, indent, y); right(fmt(valor), 410, y) }
   linhaResumo('Saldo de Conta Corrente em 31/12', SALDO_INICIAL, 345)
@@ -78,13 +84,13 @@ function build(file, { debitosImpressos } = {}) {
   linhaResumo('Total de Débitos', debitosImpressos ?? -debitos, 393)
   linhaResumo('Saques / Pagamentos', -debitos, 405, 50)
   linhaResumo('Saldo de Conta Corrente em 31/01', saldoFinal, 417)
-  t('Conta Corrente', 34, 450, 10, 'Helvetica-Bold')
-  t('Movimentação', 34, 465, 9, 'Helvetica-Bold')
-  tableHeader(485)
-  t('SALDO EM 31/12', 65, 500, 8, 'Helvetica-Bold'); right(fmt(SALDO_INICIAL), 545, 500)
+  t('Conta Corrente', 70.8, 537.5, 10, 'Helvetica-Bold')
+  t('Movimentação', 34, 562.2, 9, 'Helvetica-Bold')
+  tableHeader(580)
+  t('SALDO EM 31/12', 65, 595, 8, 'Helvetica-Bold'); right(fmt(SALDO_INICIAL), 545, 595)
 
   let saldo = SALDO_INICIAL
-  let y = 515
+  let y = 610
   MOVES.forEach((m, i) => {
     saldo = Math.round((saldo + m[3]) * 100) / 100
     if (i === PAGE2_MOVES) {
@@ -108,21 +114,35 @@ function build(file, { debitosImpressos } = {}) {
   t('SALDO EM 31/01', 65, y, 8, 'Helvetica-Bold'); right(fmt(saldoFinal), 545, y)
   y += 40
 
-  // ─ seções que devem ser ignoradas (página 3)
+  // ─ seções que devem ser ignoradas (página 3), com os títulos nas coordenadas reais
   t('Saldos por Período', 34, y, 10, 'Helvetica-Bold'); y += 14
   t('01/01 a 31/01', 65, y); right(fmt(SALDO_INICIAL), 462, y); y += 30
   t('Débito Automático em Conta Corrente', 34, y, 10, 'Helvetica-Bold'); y += 14 // repete um movimento: não pode duplicar
   tableHeader(y); y += 12
   t('02/01', 34, y); t('DEBITO AUT. TELEFONE CELULAR', 65, y); t('-', 312, y); right('156,00-', 462, y); y += 9
   t('VIVO MOVEL-SP', 65, y); y += 30
-  t('Poupança', 34, y, 10, 'Helvetica-Bold'); y += 14 // sem movimentos
-  t('SALDO ANTERIOR', 65, y); right('0,00', 545, y); y += 9
-  t('SALDO ATUAL', 65, y); right('0,00', 545, y); y += 30
-  t('Pacote de Serviços', 34, y, 10, 'Helvetica-Bold'); y += 14
-  t('Pacote Exemplo Plus - tarifa mensal', 65, y); right('38,90', 462, y)
+  t('Comprovantes de Pagamento', 70.8, y, 10, 'Helvetica-Bold'); y += 14
+  t('02/01', 34, y); t('PAGAMENTO BOLETO CONDOMINIO', 65, y); t('-', 312, y); right('250,00', 462, y); y += 30
+  t('Investimentos', 62.4, y, 10, 'Helvetica-Bold'); y += 14
+  t('05/01', 34, y); t('APLICACAO CDB EXEMPLO', 65, y); t('-', 312, y); right('100,00', 462, y); y += 30
+  t('Poupança', 34, y, 10, 'Helvetica-Bold'); y += 14
+  t('Movimentação', 34, y, 9, 'Helvetica-Bold'); y += 14 // a poupança tem a própria "Movimentação"
+  if (zero) {
+    // saldo da poupança impresso como linha de movimento (com Nº documento e valor): não pode virar lançamento
+    t('SALDO ANTERIOR', 65, y); right('0,00', 545, y); y += 9
+    t('31/01', 34, y); t('SALDO ATUAL', 65, y); t('-', 312, y); right('0,55', 462, y); y += 30
+  } else {
+    t('SALDO ANTERIOR', 65, y); right('0,00', 545, y); y += 9 // poupança sem movimentos
+    t('SALDO ATUAL', 65, y); right('0,00', 545, y); y += 30
+  }
+  t('Pacote de Serviços', 62.4, y, 10, 'Helvetica-Bold'); y += 14
+  t('Pacote Exemplo Plus - tarifa mensal', 65, y); right('38,90', 462, y); y += 30
+  t('Fale Conosco', 70.8, y, 10, 'Helvetica-Bold'); y += 14
+  t('SAC 0800 000 0000 - Ouvidoria 0800 000 0001', 65, y)
   doc.end()
   return { creditos, debitos, saldoFinal }
 }
 
 console.log(build('santander_extrato.pdf'))
 build('santander_totais_errados.pdf', { debitosImpressos: 6718.78 })
+build('santander_saldo_zero.pdf', { zero: true })

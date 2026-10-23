@@ -6,6 +6,7 @@ import { abrirLancamentos, rows, openDetail, detailField, closeDetail } from './
 
 const EXTRATO = 'tests/fixtures/santander_extrato.pdf'
 const ERRADOS = 'tests/fixtures/santander_totais_errados.pdf'
+const SALDO_ZERO = 'tests/fixtures/santander_saldo_zero.pdf'
 const OUTRO_BANCO = 'tests/fixtures/pdf_outro_banco.pdf'
 
 const result = page => page.getByTestId('import-result')
@@ -96,6 +97,16 @@ test('Extrato que não confere', async ({ page }) => {
   await expect(page.getByText('Histórico de Importações')).toBeHidden()
   await abrirLancamentos(page)
   await expect(page.getByText('0 de 0 registros')).toBeVisible()
+})
+
+test('Extrato que fecha com saldo zero', async ({ page }) => {
+  await importar(page, SALDO_ZERO)
+  await expect(result(page)).toContainText('13 lançamentos importados', { timeout: LONGO })
+  await expect(result(page)).not.toContainText('poupança') // nenhum aviso: a poupança só tem saldos
+  await abrirLancamentos(page)
+  await expect(rows(page)).toHaveCount(13)
+  await expect(linha(page, 'SALDO ATUAL')).toHaveCount(0) // nada da Poupança
+  await expect(linha(page, 'TED PARA OUTRA CONTA - EMPRESA EXEMPLO LTDA')).toHaveCount(1)
 })
 
 test('Reimportar', async ({ page }) => {

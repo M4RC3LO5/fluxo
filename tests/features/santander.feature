@@ -31,6 +31,10 @@ Funcionalidade: Importação Santander (PDF)
     Quando importo santander_totais_errados.pdf
     Então vejo "Extrato não conferiu" e nada é importado
 
+  Cenário: Extrato que fecha com saldo zero
+    Quando importo santander_saldo_zero.pdf
+    Então os lançamentos são importados e nenhum vem da Poupança
+
   Cenário: Reimportar
     Dado que importei santander_extrato.pdf
     Quando importo de novo
