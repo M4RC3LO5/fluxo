@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { importFixture } from './helpers/importFixture.js'
 import { waitAppReady } from './helpers/appReady.js'
+import { showBills } from './helpers/dashboard.js'
 import { abrirLancamentos, rows } from './helpers/lancamentos.js'
 
 const kpis = page => page.getByTestId('kpi-card').allInnerTexts()
@@ -9,11 +10,11 @@ const history = page => page.getByText('Histórico de Importações')
 test('Dados sobrevivem ao recarregar', async ({ page }) => {
   await importFixture(page)
   await page.getByRole('link', { name: 'Ver Dashboard' }).click()
-  await expect(page.getByTestId('kpi-card').first()).toBeVisible()
+  await showBills(page) // o Dashboard abre na visão Pessoal
   const antes = await kpis(page)
 
   await page.reload()
-  await expect(page.getByTestId('kpi-card').first()).toBeVisible()
+  await showBills(page) // a visão escolhida não persiste: volta para Pessoal
   expect(await kpis(page)).toEqual(antes)
 
   // histórico de versões (hoje exibido em Importações)

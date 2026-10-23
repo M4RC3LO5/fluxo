@@ -11,6 +11,7 @@ Funcionalidade: Dashboard financeiro
     E clico em "Importar"
     E vejo a mensagem "15 lançamentos importados"
     Quando acesso o menu "Dashboard"
+    E seleciono a visão "Contas a pagar"
 
   Cenário: KPIs principais exibem valores da importação
     Então o card "Total Previsto" exibe "R$ 46.030,00"

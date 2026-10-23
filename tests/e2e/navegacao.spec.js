@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { importFixture } from './helpers/importFixture.js'
 import { waitAppReady } from './helpers/appReady.js'
+import { showBills } from './helpers/dashboard.js'
 
 const bottomNav = page => page.getByTestId('bottom-nav')
 const items = page => page.getByTestId('bottom-nav-item')
@@ -86,7 +87,7 @@ test.describe('Celular', () => {
   async function dashboardRolado(page) {
     await importFixture(page)
     await items(page).filter({ hasText: 'Dashboard' }).tap()
-    await expect(page.getByTestId('kpi-card').first()).toBeVisible()
+    await showBills(page) // o Dashboard abre na visão Pessoal
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
     const y = await page.evaluate(() => window.scrollY)
     expect(y).toBeGreaterThan(500)

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { showBills } from './helpers/dashboard.js'
 import { importFixture, FIXED_NOW } from './helpers/importFixture.js'
 import { rows } from './helpers/lancamentos.js'
 
@@ -12,7 +13,7 @@ async function abrirDashboard(page, isMobile) {
   await page.clock.setSystemTime(FIXED_NOW)
   if (isMobile) await page.getByTestId('bottom-nav-item').filter({ hasText: 'Dashboard' }).tap()
   else await page.getByRole('link', { name: /Dashboard/ }).first().click()
-  await expect(page.getByTestId('kpi-card').first()).toBeVisible()
+  await showBills(page) // o Dashboard abre na visão Pessoal
 }
 
 test.beforeEach(async ({ page, isMobile }) => abrirDashboard(page, isMobile))

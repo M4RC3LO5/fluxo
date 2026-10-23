@@ -8,6 +8,7 @@ Funcionalidade: Dashboard no celular e drill-down
     Dado que a data atual é "10/10/2026"
     E importei o arquivo "tests/fixtures/fluxo_exemplo.xlsx"
     Quando acesso o menu "Dashboard"
+    E seleciono a visão "Contas a pagar"
 
   Cenário: KPIs em duas colunas no celular
     Dado que estou em um celular

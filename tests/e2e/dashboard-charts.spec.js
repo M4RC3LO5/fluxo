@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { showBills } from './helpers/dashboard.js'
 import { importFixture, FIXED_NOW } from './helpers/importFixture.js'
 
 // Lê o estado final de um gráfico: dados e tamanho de cada elemento
@@ -66,6 +67,7 @@ test('dashboard renderiza os 4 gráficos completos, sem erros de console', async
   await page.clock.setSystemTime(FIXED_NOW)
   if (isMobile) await page.getByTestId('bottom-nav-item').filter({ hasText: 'Dashboard' }).tap()
   else await page.getByRole('link', { name: /Dashboard/ }).first().click()
+  await showBills(page) // o Dashboard abre na visão Pessoal
 
   if (isMobile) {
     const abas = ['Comparativo', 'Pessoas', 'Pagadores', 'Evolução']
