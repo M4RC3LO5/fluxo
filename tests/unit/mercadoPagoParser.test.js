@@ -130,6 +130,66 @@ describe('conferência com os totais impressos', () => {
   })
 })
 
+// ─── cabeçalho com rótulo e valor em itens separados (layout do extrato real) ───
+describe('cabeçalho: leitura por par rótulo → valor', () => {
+  // totais do extrato real: 0,08 + 7.031,38 - 6.651,13 = 380,33
+  const movimentos = [
+    ...row(250, { id: '100000000001', valor: 7031.38, saldo: 7031.46, desc: [[0, 'Pix recebido Carlos Terceiro Lima']] }),
+    ...row(310, { id: '100000000002', valor: -6651.13, saldo: 380.33, desc: [[0, 'Pagamento de fatura']] })
+  ]
+  const comum = [
+    item('EXTRATO DE CONTA', 44.3, 40), item('Mercado Pago', 440, 40),
+    item('Marina Exemplo Santos', 44.3, 60), item('CPF/CNPJ: 000.000.000-00', 44.3, 72),
+    item('Periodo:', 44.3, 90), item('De 01-10-2026 al 31-10-2026', 88.1, 90),
+    ...tableHeader(150), ...movimentos, ...footer(1)
+  ]
+  // coordenadas reais do pdfjs: Saldo inicial à esquerda, Entradas/Saidas empilhadas no meio, Saldo final à direita
+  const real = [
+    item('Saldo inicial:', 44.3, 113.3), item('R$ 0,08', 88.1, 113.3),
+    item('Entradas:', 178.3, 106.8), item('R$ 7.031,38', 211.6, 106.8),
+    item('Saidas:', 178.3, 119.8), item('R$ -6.651,13', 204.3, 119.8),
+    item('Saldo final:', 326.7, 114.3), item('R$ 380,33', 365.6, 114.3)
+  ]
+  const esperado = { saldoInicial: 0.08, entradas: 7031.38, saidas: -6651.13, saldoFinal: 380.33 }
+
+  it('layout real: Saldo inicial e Saldo final na mesma linha agrupada', () => {
+    const { summary, entries } = parseMercadoPagoItems([[...comum, ...real]])
+    expect(summary).toMatchObject({ ...esperado, periodStart: '2026-10-01', periodEnd: '2026-10-31', holder: 'Marina Exemplo Santos' })
+    expect(entries).toHaveLength(2)
+  })
+
+  it('independe da ordem dos itens (inclusive o período)', () => {
+    const { summary } = parseMercadoPagoItems([[...comum, ...real].reverse()])
+    expect(summary).toMatchObject({ ...esperado, periodStart: '2026-10-01', periodEnd: '2026-10-31' })
+  })
+
+  it('os quatro rótulos na mesma linha', () => {
+    const naMesmaLinha = [
+      item('Saldo inicial:', 44.3, 113.3), item('R$ 0,08', 88.1, 113.3),
+      item('Entradas:', 178.3, 113.0), item('R$ 7.031,38', 211.6, 113.0),
+      item('Saidas:', 270.3, 113.8), item('R$ -6.651,13', 296.3, 113.8),
+      item('Saldo final:', 380.7, 113.3), item('R$ 380,33', 419.6, 113.3)
+    ]
+    const { summary } = parseMercadoPagoItems([[...comum, ...naMesmaLinha]])
+    expect(summary).toMatchObject(esperado)
+  })
+
+  it('valor a mais de 3 px de altura do rótulo não é o valor dele', () => {
+    const torto = real.map(i => (i.str === 'R$ 380,33' ? { ...i, y: i.y + 4 } : i))
+    expect(() => parseMercadoPagoItems([[...comum, ...torto]])).toThrow('Cabeçalho do extrato incompleto (Saldo final)')
+  })
+
+  it('rótulo sem valor à direita é cabeçalho incompleto', () => {
+    const semValor = real.filter(i => i.str !== 'R$ 0,08')
+    expect(() => parseMercadoPagoItems([[...comum, ...semValor]])).toThrow('Cabeçalho do extrato incompleto (Saldo inicial)')
+  })
+
+  it('período fora do cabeçalho é cabeçalho incompleto', () => {
+    const semPeriodo = comum.filter(i => !i.str.startsWith('De 01') && i.str !== 'Periodo:')
+    expect(() => parseMercadoPagoItems([[...semPeriodo, ...real]])).toThrow('Cabeçalho do extrato incompleto (periodo)')
+  })
+})
+
 // ─── contra o PDF sintético (pdfjs no Node) ──────────────────────────────
 describe('PDF sintético', () => {
   const load = async (nome) => {

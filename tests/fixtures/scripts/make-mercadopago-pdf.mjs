@@ -53,10 +53,16 @@ function build(file, { saldoFinalImpresso } = {}) {
 
   // página 1: cabeçalho do documento
   t('EXTRATO DE CONTA', 40, 40, 14, 'Helvetica-Bold'); t('Mercado Pago', 440, 42, 10, 'Helvetica-Bold')
-  t(HOLDER, 40, 70, 9); t('CPF/CNPJ: 000.000.000-00', 40, 82, 9); t('Agência: 0001   Conta: 00000000-0', 40, 94, 9)
-  t('Periodo: De 01-10-2026 al 31-10-2026', 40, 116, 9)
-  t(`Entradas: ${brl(entradas)}`, 40, 140, 9); t(`Saidas: ${brl(saidas)}`, 40, 152, 9)
-  t(`Saldo inicial: ${brl(SALDO_INICIAL)}`, 40, 164, 9); t(`Saldo final: ${brl(saldoFinalImpresso ?? saldoFinal)}`, 40, 176, 9)
+  t(HOLDER, 44.3, 62, 9); t('CPF/CNPJ: 000.000.000-00', 44.3, 72, 9); t('Agência: 0001   Conta: 00000000-0', 44.3, 82, 9)
+  t('Periodo:', 44.3, 92, 9); t('De 01-10-2026 al 31-10-2026', 88.1, 92, 9)
+  // totais como no PDF real: rótulo e valor em itens separados; Saldo inicial à esquerda, Entradas e Saidas
+  // empilhadas no meio, Saldo final à direita. Alturas (y do pdfjs, de cima p/ baixo): 113,3 / 106,8 / 119,8 / 114,3.
+  // `top` = y do pdfjs - 6,5 (ascendente da Helvetica 9).
+  const par = (rotulo, valor, xRotulo, xValor, yPdfjs) => { t(rotulo, xRotulo, yPdfjs - 6.5, 9); t(valor, xValor, yPdfjs - 6.5, 9) }
+  par('Saldo inicial:', brl(SALDO_INICIAL), 44.3, 98.1, 113.3)
+  par('Entradas:', brl(entradas), 178.3, 216.6, 106.8)
+  par('Saidas:', brl(saidas), 178.3, 209.3, 119.8)
+  par('Saldo final:', brl(saldoFinalImpresso ?? saldoFinal), 326.7, 375.6, 114.3)
   t('DETALHE DOS MOVIMENTOS', 40, 205, 10, 'Helvetica-Bold')
   tableHeader(225)
   footer(1)
