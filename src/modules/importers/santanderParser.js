@@ -11,6 +11,7 @@ const COLUMN_MARGIN = 6 // px de folga à esquerda da faixa de cada coluna
 const PAGE_TOP = 45 // acima: título e mês de cada página
 const PAGE_BOTTOM = 809 // a partir daqui: rodapé
 const LABEL_TOLERANCE = 3
+const HEADING_MAX_X = 80 // títulos de seção começam entre x 34 e 71; as datas (x 34) saem pelo DAY_RE
 const norm = (s) => normalizeText(s).replace(/\s+/g, ' ').trim()
 const cents = (n) => Math.round(n * 100)
 const brl = (n) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -150,13 +151,15 @@ export function parseSantanderItems(pages, { importId = null } = {}) {
     for (const line of lines) {
       const text = norm(line.text)
       const first = line.items[0]
-      const isHeading = first.x <= 40 && !DAY_RE.test(first.str)
+      // título de seção: nunca tem valor na linha, e começa à esquerda (as datas ficam de fora)
+      const isHeading = first.x <= HEADING_MAX_X && !DAY_RE.test(first.str) && !line.items.some(i => AMOUNT_RE.test(i.str))
 
       // — cabeçalhos de seção —
       if (isHeading && /^resumo - [a-z]+\/\d{4}$/.test(text)) { section = 'resumo'; continue }
       if (isHeading && text === 'conta corrente') { section = 'cc'; continue }
       if (isHeading && text.length < 30 && text.startsWith('movimentacao') && section !== 'ignored') {
-        section = closing ? 'ignored' : 'mov'
+        if (section === 'poupanca') continue // a "Movimentação" da poupança continua sendo da poupança
+        section = closing !== null ? 'ignored' : 'mov' // saldo de fechamento 0,00 é um saldo, não "ausente"
         continue
       }
       if (isHeading && text.length < 60 && IGNORED_HEADINGS.some(h => text.startsWith(h))) {
@@ -194,11 +197,11 @@ export function parseSantanderItems(pages, { importId = null } = {}) {
       if (balanceRow) {
         const value = money.length ? parseSantanderAmount(money[money.length - 1].str) : NaN
         if (Number.isNaN(value)) throw new Error('Linha SALDO EM sem valor. Nada foi importado.')
-        if (!opening) opening = value
+        if (opening === null) opening = value
         else { closing = value; section = 'ignored' } // o 2º SALDO EM fecha a tabela
         continue
       }
-      if (!opening) continue
+      if (opening === null) continue
 
       const dateItem = line.items.find(i => i.x < bands.desc && DAY_RE.test(i.str))
       if (dateItem) {

@@ -200,7 +200,8 @@ export function parseMercadoPagoItems(pages, { importId = null } = {}) {
   const gaps = []
   const byPage = pages.map((_, p) => anchors.filter(a => a.page === p))
   byPage.forEach(list => list.forEach((a, i) => { if (i > 0) gaps.push(a.y - list[i - 1].y) }))
-  const spacing = median(gaps) || 40
+  const mediana = median(gaps)
+  const spacing = mediana > 0 ? mediana : 40
   const nextAnchor = (p) => anchors.find(a => a.page > p)
 
   fragsByPage.forEach((frags, p) => {
