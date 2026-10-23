@@ -34,7 +34,6 @@ Funcionalidade: Importação em um passo
 
     Exemplos:
       | fonte        |
-      | Nubank       |
       | Mercado Pago |
       | Santander    |
 

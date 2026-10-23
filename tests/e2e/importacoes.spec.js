@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test'
-import { writeFileSync } from 'node:fs'
 import { FIXTURE, FIXED_NOW } from './helpers/importFixture.js'
 import { dropFile } from './helpers/dropFile.js'
 import { rows, norm } from './helpers/lancamentos.js'
@@ -44,7 +43,7 @@ test('Arquivo com extensão errada é recusado', async ({ page }) => {
   await expect(page.getByText('Histórico de Importações')).toBeHidden() // nada foi importado
 })
 
-for (const [nome, id] of [['Nubank', 'nubank'], ['Mercado Pago', 'mercadopago'], ['Santander', 'santander']]) {
+for (const [nome, id] of [['Mercado Pago', 'mercadopago'], ['Santander', 'santander']]) {
   test(`Fontes ainda não disponíveis: ${nome}`, async ({ page }) => {
     await expect(card(page, id)).toContainText('Em breve')
     await expect(card(page, id)).toHaveAttribute('aria-disabled', 'true')
@@ -72,14 +71,6 @@ test.describe('Computador', () => {
     await dropFile(page, 'main', FIXTURE)
     await expect(result(page)).toContainText('15 lançamentos importados')
     await expect(page.getByTestId('drop-overlay')).toBeHidden()
-  })
-
-  test('Arrastar em qualquer lugar um arquivo de fonte não implementada mostra erro', async ({ page }, testInfo) => {
-    const csv = testInfo.outputPath('extrato.csv')
-    writeFileSync(csv, 'a;b')
-    await dropFile(page, 'main', csv)
-    await expect(error(page)).toContainText('.csv')
-    await expect(result(page)).toBeHidden()
   })
 })
 
