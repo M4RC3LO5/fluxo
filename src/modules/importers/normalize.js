@@ -1,5 +1,5 @@
 /** Modelo canônico de lançamento, comum a todos os parsers (xlsx, CSV, OFX...). */
-export const SOURCES = ['xlsx', 'nubank', 'mercadopago', 'ofx', 'pdf']
+export const SOURCES = ['xlsx', 'nubank', 'mercadopago', 'santander', 'ofx', 'pdf']
 
 const strip = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 

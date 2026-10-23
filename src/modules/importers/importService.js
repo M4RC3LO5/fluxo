@@ -3,10 +3,11 @@ import { useImportStore } from '@/stores/importStore.js'
 import { parseXlsx } from './xlsxImporter.js'
 import { parseNubank, detectNubankLayout, NOT_NUBANK } from './nubankParser.js'
 import { parseMercadoPago } from './mercadoPagoParser.js'
+import { parseSantander } from './santanderParser.js'
 import { readCsv } from './csv.js'
 import { extractPdfItems, detectPdfSource } from './pdf.js'
 
-const parsers = { xlsx: parseXlsx, nubank: parseNubank, mercadopago: parseMercadoPago }
+const parsers = { xlsx: parseXlsx, nubank: parseNubank, mercadopago: parseMercadoPago, santander: parseSantander }
 
 /** Fonte de um .csv solto na página, pelo cabeçalho. Por ora só o Nubank é reconhecido. */
 export async function detectCsvSource(file) {
@@ -19,8 +20,7 @@ export async function detectCsvSource(file) {
 export async function detectPdfSourceOfFile(file) {
   const { pages } = await extractPdfItems(file)
   const source = detectPdfSource(pages)
-  if (source === 'mercadopago') return source
-  if (source === 'santander') throw new Error('Santander ainda não suportado')
+  if (source) return source // 'mercadopago' | 'santander'
   throw new Error('PDF não reconhecido')
 }
 
@@ -36,7 +36,8 @@ export async function runImport(file, sourceId) {
   const { added, skipped } = await useFinanceStore().addEntries(entries)
   await useImportStore().addImport({ id: importId, source: sourceId, fileName: file.name, count: added, skipped })
   const period = summary?.periodStart ? { start: summary.periodStart, end: summary.periodEnd } : null
-  return { added, skipped, warnings: warnings || [], period }
+  const monthLabel = summary?.month ? `${summary.month}/${summary.year}` : null
+  return { added, skipped, warnings: warnings || [], period, monthLabel }
 }
 
 /** Remove a importação e só os lançamentos dela. */

@@ -95,6 +95,7 @@
           <div class="min-w-0">
             <p class="text-sm font-bold text-white">{{ importResult.added }} {{ importResult.added === 1 ? 'lançamento importado' : 'lançamentos importados' }}<template v-if="importResult.skipped > 0"> · {{ importResult.skipped }} {{ importResult.skipped === 1 ? 'duplicata ignorada' : 'duplicatas ignoradas' }}</template></p>
             <p class="mt-1 break-words text-xs text-slate-400">Arquivo: <span class="font-semibold text-slate-200">{{ importResult.fileName }}</span></p>
+            <p v-if="importResult.monthLabel" data-testid="import-month" class="mt-1 text-xs text-slate-400">Extrato de <span class="font-semibold text-slate-200">{{ importResult.monthLabel }}</span></p>
             <p v-if="importResult.period" data-testid="import-period" class="mt-1 text-xs text-slate-400">Período do extrato: <span class="font-semibold text-slate-200">{{ formatDate(importResult.period.start) }} a {{ formatDate(importResult.period.end) }}</span></p>
           </div>
         </div>
@@ -175,7 +176,7 @@ const importSources = [
   { id: 'xlsx',        icon: '📊', name: 'Planilha Excel', description: 'Arquivo .xlsx com lançamentos estruturados', badge: 'XLSX', ext: '.xlsx', available: true  },
   { id: 'nubank',      icon: '💜', name: 'Nubank',         description: 'Extrato da conta ou fatura do cartão (CSV)', badge: 'CSV',  ext: '.csv',  available: true  },
   { id: 'mercadopago', icon: '💙', name: 'Mercado Pago',   description: 'Extrato da conta (PDF)',                      badge: 'PDF',  ext: '.pdf',  available: true  },
-  { id: 'santander',   icon: '🔴', name: 'Santander',      description: 'Extrato PDF — processamento via IA',         badge: 'PDF',  ext: '.pdf',  available: false },
+  { id: 'santander',   icon: '🔴', name: 'Santander',      description: 'Extrato consolidado mensal (PDF)',             badge: 'PDF',  ext: '.pdf',  available: true  },
 ]
 
 const inputRefs = reactive({})
@@ -217,8 +218,8 @@ async function processFile(source, file) {
 
   importingId.value = source.id
   try {
-    const { added, skipped, warnings, period } = await runImport(file, source.id)
-    importResult.value = { added, skipped, fileName: file.name, warnings, period }
+    const { added, skipped, warnings, period, monthLabel } = await runImport(file, source.id)
+    importResult.value = { added, skipped, fileName: file.name, warnings, period, monthLabel }
   } catch (err) {
     importError.value = err.message || 'Não foi possível ler o arquivo. Verifique se está no formato correto.'
   } finally {
