@@ -6,6 +6,9 @@
       <p class="text-sm text-slate-400 max-w-2xl mx-auto">Visão estratégica e análise em tempo real do seu desempenho financeiro</p>
     </div>
 
+    <!-- seletor de visão (Pessoal | Contas a pagar), vindo da página -->
+    <slot />
+
     <!-- Primary KPIs -->
     <section class="order-1">
       <div class="grid grid-cols-2 gap-3 md:gap-6 xl:grid-cols-4">

@@ -121,6 +121,21 @@
       >{{ chip.label }}</button>
     </div>
 
+    <!-- Filtros vindos do Dashboard (mês, tipo, categoria): chips removíveis -->
+    <div v-if="activeChips.length" class="flex flex-wrap items-center gap-2" data-testid="filter-chips">
+      <button
+        v-for="chip in activeChips"
+        :key="chip.key"
+        type="button"
+        data-testid="filter-chip"
+        :aria-label="`Remover filtro ${chip.label}`"
+        @click="removeChip(chip.key)"
+        class="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-brand-500/40 bg-brand-600/20 px-4 text-sm font-medium text-white transition-colors hover:bg-brand-600/30 md:min-h-0 md:py-1.5"
+      >{{ chip.label }} <span aria-hidden="true" class="text-slate-300">×</span></button>
+      <button type="button" data-testid="filter-chips-clear" @click="clearChips"
+        class="min-h-[44px] rounded-full px-3 text-sm font-medium text-brand-300 hover:bg-white/5 md:min-h-0 md:py-1.5">Limpar</button>
+    </div>
+
     <!-- Lista -->
     <div>
 
@@ -316,6 +331,7 @@
 import { computed, ref, watch, onUnmounted } from 'vue'
 import { useFinanceStore } from '@/stores/financeStore'
 import { today } from '@/utils/formatters.js'
+import { monthShortLabel, NO_CATEGORY, NO_CATEGORY_LABEL } from '@/modules/kpis/pfKpis.js'
 import { typeBadge } from '@/utils/entryType.js'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import LancamentoCard from '@/components/lancamentos/LancamentoCard.vue'
@@ -347,6 +363,23 @@ const searchInput = ref(null)
 function clearSearch() {
   financeStore.filters.search = ''
   searchInput.value?.focus()
+}
+
+// ─── Chips dos filtros vindos do Dashboard ────────────────────────────────────
+const KIND_LABELS = { in: 'Entradas', out: 'Saídas', transfer: 'Transferências' }
+const activeChips = computed(() => {
+  const { month, kind, category } = financeStore.filters
+  const chips = []
+  if (month) chips.push({ key: 'month', label: monthShortLabel(month) })
+  if (kind) chips.push({ key: 'kind', label: KIND_LABELS[kind] || kind })
+  if (category) chips.push({ key: 'category', label: `Categoria: ${category === NO_CATEGORY ? NO_CATEGORY_LABEL : category}` })
+  return chips
+})
+function removeChip(key) { financeStore.filters[key] = '' }
+function clearChips() {
+  financeStore.filters.month = ''
+  financeStore.filters.kind = ''
+  financeStore.filters.category = ''
 }
 
 function clearFilters() {

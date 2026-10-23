@@ -8,7 +8,14 @@ import { dedupKey } from '@/modules/importers/dedup.js'
 export const useFinanceStore = defineStore('finance', () => {
   const entries = ref([])
   const showDataLabels = ref(false)
-  const filters = ref({ status: 'all', alert: '', search: '', responsible: '', center: '' })
+  // month 'AAAA-MM' | ''; kind 'in' | 'out' | 'transfer' | ''; category '' | nome | '__none__' (Sem categoria)
+  const defaultFilters = () => ({ status: 'all', alert: '', search: '', responsible: '', center: '', month: '', kind: '', category: '' })
+  const filters = ref(defaultFilters())
+  function resetFilters() { filters.value = defaultFilters() }
+
+  // estado de tela do Dashboard (não persiste): visão ('personal' | 'bills') e mês selecionado da visão Pessoal
+  const dashboardView = ref('personal')
+  const pfMonth = ref('')
 
   // ─── Totals ───────────────────────────────────────────────────────────
   const totalEntries = computed(() => entries.value.length)
@@ -85,9 +92,14 @@ export const useFinanceStore = defineStore('finance', () => {
 
   // ─── Filtered entries ─────────────────────────────────────────────────
   const filteredEntries = computed(() => {
-    const { status, search, responsible, center } = filters.value
+    const { status, search, responsible, center, month, kind, category } = filters.value
     const t = today()
     return entries.value.filter(e => {
+      if (month && !(e.dueDate && e.dueDate.slice(0, 7) === month)) return false
+      if (kind === 'transfer' && !e.transfer) return false
+      if ((kind === 'in' || kind === 'out') && (e.transfer || e.type !== kind)) return false
+      if (category === '__none__' && e.category) return false
+      if (category && category !== '__none__' && e.category !== category) return false
       if (status === 'paid'    && e.status !== 'paid') return false
       if (status === 'pending' && (e.status === 'paid' || (e.dueDate && e.dueDate < t))) return false
       if (status === 'overdue' && (e.status === 'paid' || !e.dueDate || e.dueDate >= t)) return false
@@ -133,7 +145,7 @@ export const useFinanceStore = defineStore('finance', () => {
   }
 
   return {
-    entries, showDataLabels, filters,
+    entries, showDataLabels, filters, resetFilters, dashboardView, pfMonth,
     totalEntries, totalForecast, totalPaid, totalPending, overdueUnpaid,
     forecastVsPaidDiff, paidCount, pendingCount,
     totalByResponsible, totalByPayer, totalByCenter, upcomingDue,
