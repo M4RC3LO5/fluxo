@@ -21,7 +21,7 @@ describe('settingsStore', () => {
     expect(await s.addHolderName('  Marina   Exemplo Santos ')).toBe(true)
     expect(await s.addHolderName('MARÍNA EXEMPLO SANTOS')).toBe(false)
     expect(s.holderNames).toEqual(['Marina Exemplo Santos'])
-    expect(disco.get('s')).toEqual({ holderNames: ['Marina Exemplo Santos'], ignoredRecurring: [] })
+    expect(disco.get('s')).toEqual({ holderNames: ['Marina Exemplo Santos'], ignoredRecurring: [], customCategories: [] })
   })
   it('ignora nome vazio', async () => {
     const s = useSettingsStore()
@@ -54,7 +54,7 @@ describe('settingsStore: recorrentes ignorados', () => {
     expect(await s.ignoreRecurring('netflix.com')).toBe(true)
     expect(await s.ignoreRecurring('netflix.com')).toBe(false)
     expect(await s.ignoreRecurring('')).toBe(false)
-    expect(disco.get('s')).toEqual({ holderNames: ['Marina Exemplo Santos'], ignoredRecurring: ['netflix.com'] })
+    expect(disco.get('s')).toEqual({ holderNames: ['Marina Exemplo Santos'], ignoredRecurring: ['netflix.com'], customCategories: [] })
     setActivePinia(createPinia())
     const novo = useSettingsStore()
     await novo.hydrate()

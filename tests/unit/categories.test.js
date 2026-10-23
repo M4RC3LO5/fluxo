@@ -95,8 +95,8 @@ describe('catálogo', () => {
   const nomes = new Set(CATALOG.map(c => c.name))
 
   it('tem as categorias combinadas, por tipo', () => {
-    expect(CATALOG.filter(c => c.kind === 'out')).toHaveLength(20)
-    expect(CATALOG.filter(c => c.kind === 'in').map(c => c.name)).toEqual(['Salário', 'Rendimentos', 'Estorno', 'Reembolso', 'Outras entradas'])
+    expect(CATALOG.filter(c => c.kind === 'out')).toHaveLength(25)
+    expect(CATALOG.filter(c => c.kind === 'in').map(c => c.name)).toEqual(['Salário', 'Rendimentos', 'Estorno', 'Reembolso', 'Restituição de impostos', 'Vendas', 'Presentes recebidos', 'Outras entradas'])
     expect(CATALOG.filter(c => c.kind === 'transfer').map(c => c.name)).toEqual(['Transferência entre contas', 'Pagamento de fatura', 'Investimentos', 'Saldo anterior'])
     expect(CATALOG.every(c => c.icon)).toBe(true)
     expect(nomes.size).toBe(CATALOG.length)
@@ -131,7 +131,7 @@ describe('catálogo', () => {
     expect(categoriesFor('out').every(c => c.kind === 'out')).toBe(true)
     expect(categoriesFor('in').every(c => c.kind === 'in')).toBe(true)
     expect(categoriesFor(null).some(c => c.kind === 'transfer')).toBe(false)
-    expect(categoriesFor(null)).toHaveLength(25)
+    expect(categoriesFor(null)).toHaveLength(33)
   })
 })
 

@@ -218,3 +218,93 @@ describe('desfazer e marcar', () => {
     expect(r).toMatchObject({ transfer: false, transferSource: 'manual' })
   })
 })
+
+
+describe('pagamento de fatura (qualquer descrição, 0 a 5 dias)', () => {
+  const recebido = (o = {}) => e({
+    description: 'Pagamento recebido', type: 'in', account: 'nubank-cartao', forecast: 1234.56, dueDate: '2026-09-13',
+    transfer: true, transferSource: 'bank', category: 'Pagamento de fatura', categorySource: 'bank', ...o
+  })
+  const saida = (o = {}) => e({ description: 'PAGAMENTO TITULO', type: 'out', account: 'santander-cc', forecast: 1234.56, dueDate: '2026-09-10', ...o })
+  const porId = (list, x) => list.find(i => i.id === x.id)
+
+  it('1 candidato de cada lado pareia: a saída vira transfer "pair" com a categoria da fatura', () => {
+    const o = saida()
+    const i = recebido()
+    const r = pairTransfers([o, i])
+    expect(porId(r, o)).toMatchObject({ transfer: true, transferSource: 'pair', category: 'Pagamento de fatura', pairedWith: i.id })
+    expect(porId(r, i)).toMatchObject({ transferSource: 'bank', pairedWith: o.id })
+  })
+
+  it('a descrição não importa', () => {
+    for (const description of ['PAGAMENTO TITULO', 'Boleto', 'Compra qualquer', 'DEB AUTOMATICO']) {
+      const o = saida({ description })
+      expect(porId(pairTransfers([o, recebido()]), o).transfer).toBe(true)
+    }
+  })
+
+  it('0 a 5 dias pareiam, 6 não', () => {
+    for (const d of ['2026-09-13', '2026-09-10', '2026-09-08', '2026-09-18']) {
+      const o = saida({ dueDate: d })
+      expect(porId(pairTransfers([o, recebido()]), o).transfer, d).toBe(true)
+    }
+    const longe = saida({ dueDate: '2026-09-07' }) // 6 dias antes
+    const todos = [longe, recebido()]
+    expect(pairTransfers(todos)).toBe(todos)
+    const depois = saida({ dueDate: '2026-09-19' })
+    expect(pairTransfers([depois, recebido()]).every(x => !x.pairedWith)).toBe(true)
+  })
+
+  it('1 centavo de diferença não pareia', () => {
+    const lista = [saida({ forecast: 1234.55 }), recebido()]
+    expect(pairTransfers(lista)).toBe(lista)
+  })
+
+  it('2 candidatos de qualquer lado não pareiam', () => {
+    const duasSaidas = [saida(), saida({ dueDate: '2026-09-11' }), recebido()]
+    expect(pairTransfers(duasSaidas)).toBe(duasSaidas)
+    const duasEntradas = [saida(), recebido(), recebido({ dueDate: '2026-09-14' })]
+    expect(pairTransfers(duasEntradas)).toBe(duasEntradas)
+  })
+
+  it('saída na própria conta do cartão não pareia', () => {
+    const lista = [saida({ account: 'nubank-cartao' }), recebido()]
+    expect(pairTransfers(lista)).toBe(lista)
+  })
+
+  it('só pareia com "Pagamento recebido" do banco (entrada comum não)', () => {
+    const lista = [saida(), recebido({ transferSource: 'name', category: 'Transferência entre contas' }), recebido({ transfer: false, transferSource: null, category: 'Salário' })]
+    expect(pairTransfers(lista)).toBe(lista)
+  })
+
+  it('"manual" fica intocado: transferência manual, "Não é transferência" e categoria escolhida', () => {
+    for (const manual of [
+      { transfer: true, transferSource: 'manual', category: 'Investimentos', categorySource: 'manual' },
+      { transfer: false, transferSource: 'manual' },
+      { category: 'Contas da casa', categorySource: 'manual' }
+    ]) {
+      const lista = [saida(manual), recebido()]
+      expect(pairTransfers(lista)).toBe(lista)
+    }
+  })
+
+  it('é idempotente e "Não é transferência" desfaz o par e não é refeito', () => {
+    const o = saida()
+    const i = recebido()
+    const uma = detectOwnTransfers([o, i], [])
+    expect(detectOwnTransfers(uma, [])).toEqual(uma)
+    const desfeito = undoTransfer(uma, o.id)
+    expect(porId(desfeito, o)).toMatchObject({ transfer: false, transferSource: 'manual', pairedWith: null, category: null })
+    expect(porId(desfeito, i)).toMatchObject({ transferSource: 'bank', pairedWith: null })
+    expect(detectOwnTransfers(desfeito, []).find(x => x.id === o.id).transfer).toBe(false)
+  })
+
+  it('mantém o pareamento de Pix/TED (0 a 1 dia)', () => {
+    const o = pix({ forecast: 80 })
+    const i = pixIn({ forecast: 80, dueDate: '2026-09-11' })
+    expect(porId(pairTransfers([o, i]), o).transferSource).toBe('pair')
+    const longe = pixIn({ forecast: 80, dueDate: '2026-09-13' })
+    const lista = [o, longe]
+    expect(pairTransfers(lista)).toBe(lista)
+  })
+})
