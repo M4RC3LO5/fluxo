@@ -6,12 +6,14 @@ export const useImportStore = defineStore('import', () => {
   // [{ id, source, fileName, count, skipped, importedAt }]; id = importId dos lançamentos
   const history = ref([])
 
-  function addImport(record) {
-    history.value.unshift({ ...record, importedAt: new Date().toISOString() })
-  }
-
   const persist = debounced(() => save(KEYS.history, history.value))
   watch(history, persist, { deep: true })
+
+  // grava na hora, sem esperar o debounce; resolve depois de gravar
+  function addImport(record) {
+    history.value.unshift({ ...record, importedAt: new Date().toISOString() })
+    return persist.flush()
+  }
 
   function removeImport(id) {
     history.value = history.value.filter(r => r.id !== id)

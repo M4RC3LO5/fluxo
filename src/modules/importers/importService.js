@@ -12,13 +12,13 @@ export async function runImport(file, sourceId) {
   const importId = crypto.randomUUID() // antes do parse: todo lançamento já nasce com o importId
   const { entries, warnings } = await parse(file, { importId })
 
-  const { added, skipped } = useFinanceStore().addEntries(entries)
-  useImportStore().addImport({ id: importId, source: sourceId, fileName: file.name, count: added, skipped })
+  // só devolve o resultado depois das duas gravações no storage
+  const { added, skipped } = await useFinanceStore().addEntries(entries)
+  await useImportStore().addImport({ id: importId, source: sourceId, fileName: file.name, count: added, skipped })
   return { added, skipped, warnings: warnings || [] }
 }
 
 /** Remove a importação e só os lançamentos dela. */
-export function deleteImport(id) {
-  useFinanceStore().removeByImport(id)
-  useImportStore().removeImport(id)
+export async function deleteImport(id) {
+  await Promise.all([useFinanceStore().removeByImport(id), useImportStore().removeImport(id)])
 }

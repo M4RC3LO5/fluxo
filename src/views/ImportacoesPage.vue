@@ -315,8 +315,9 @@ function askRemove(record) {
   removing.value = record
 }
 
-function confirmRemove() {
-  deleteImport(removing.value.id)
+async function confirmRemove() {
+  if (!removing.value) return
+  await deleteImport(removing.value.id) // fecha o sheet só depois de gravar
   removing.value = null
 }
 </script>
