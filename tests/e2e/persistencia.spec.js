@@ -1,19 +1,16 @@
 import { test, expect } from '@playwright/test'
 import { importFixture } from './helpers/importFixture.js'
 import { waitAppReady } from './helpers/appReady.js'
+import { abrirLancamentos, rows } from './helpers/lancamentos.js'
 
 const kpis = page => page.getByTestId('kpi-card').allInnerTexts()
 const history = page => page.getByText('Histórico de Importações')
-
-// o debounce de gravação é de 300 ms: espera o dado chegar ao IndexedDB antes de recarregar
-const waitSaved = page => page.waitForTimeout(600)
 
 test('Dados sobrevivem ao recarregar', async ({ page }) => {
   await importFixture(page)
   await page.getByRole('link', { name: 'Ver Dashboard' }).click()
   await expect(page.getByTestId('kpi-card').first()).toBeVisible()
   const antes = await kpis(page)
-  await waitSaved(page)
 
   await page.reload()
   await expect(page.getByTestId('kpi-card').first()).toBeVisible()
@@ -26,12 +23,21 @@ test('Dados sobrevivem ao recarregar', async ({ page }) => {
   await expect(page.getByText('+15')).toBeVisible()
 })
 
+test('Recarregar logo após importar não perde dados', async ({ page }) => {
+  await importFixture(page) // volta quando a mensagem de resultado aparece
+  await page.reload() // sem espera: a mensagem só aparece depois da gravação
+  await waitAppReady(page)
+  await abrirLancamentos(page)
+  await expect(page.getByText('15 de 15 registros')).toBeVisible()
+  await expect(rows(page)).toHaveCount(15)
+})
+
 test('Remover versão persiste', async ({ page }) => {
   await importFixture(page)
   await page.getByRole('button', { name: 'Remover importação' }).click()
   await page.getByTestId('confirm-remove').click()
+  await expect(page.getByRole('dialog')).toBeHidden() // o sheet fecha depois da gravação
   await expect(history(page)).toBeHidden()
-  await waitSaved(page)
 
   await page.reload()
   await expect(page.getByTestId('source-card-xlsx')).toBeVisible()

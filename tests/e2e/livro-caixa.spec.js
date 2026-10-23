@@ -9,7 +9,6 @@ const DUPLICADA = 'tests/fixtures/fluxo_duplicada.xlsx'
 const result = page => page.getByTestId('import-result')
 const historyRows = page => page.getByTestId('history-row')
 const importar = (page, arquivo) => page.locator('[data-testid="source-input-xlsx"]').setInputFiles(arquivo)
-const waitSaved = page => page.waitForTimeout(600) // debounce de gravação: 300 ms
 
 async function totalLancamentos(page) {
   await abrirLancamentos(page)
@@ -52,8 +51,8 @@ test('Remover importação remove só os lançamentos dela', async ({ page }) =>
   await linha.getByRole('button', { name: 'Remover importação' }).click()
   await expect(page.getByRole('dialog')).toContainText('Remover importação e 5 lançamentos?')
   await page.getByTestId('confirm-remove').click()
+  await expect(page.getByRole('dialog')).toBeHidden() // o sheet fecha depois da gravação
   await expect(historyRows(page)).toHaveCount(1)
-  await waitSaved(page)
 
   expect(await totalLancamentos(page)).toBe(15)
   await expect(rows(page).filter({ hasText: 'Venda projeto Alfa' })).toHaveCount(0)

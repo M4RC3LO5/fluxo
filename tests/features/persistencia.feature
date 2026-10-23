@@ -19,3 +19,8 @@ Funcionalidade: Persistência local
     Dado um navegador sem dados salvos
     Quando abro o app
     Então vejo o estado vazio sem erros no console
+
+  Cenário: Recarregar logo após importar não perde dados
+    Quando importo fluxo_exemplo.xlsx
+    E recarrego a página assim que a mensagem de resultado aparece
+    Então os 15 lançamentos continuam visíveis
