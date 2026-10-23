@@ -19,6 +19,12 @@ const routes = [
     component: () => import('@/views/LancamentosPage.vue')
   },
   {
+    path: '/revisar',
+    name: 'Revisar',
+    meta: { title: 'Revisar' },
+    component: () => import('@/views/ReviewPage.vue')
+  },
+  {
     path: '/configuracoes',
     name: 'Configuracoes',
     meta: { title: 'Configurações' },

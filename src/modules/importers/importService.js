@@ -4,6 +4,7 @@ import { useRulesStore } from '@/stores/rulesStore.js'
 import { useSettingsStore } from '@/stores/settingsStore.js'
 import { applyRules } from '@/modules/categories/rules.js'
 import { refreshOwnTransfers } from '@/modules/transfers/transferService.js'
+import { countUncategorized } from '@/modules/categories/review.js'
 import { parseXlsx } from './xlsxImporter.js'
 import { parseNubank, detectNubankLayout, NOT_NUBANK } from './nubankParser.js'
 import { parseMercadoPago } from './mercadoPagoParser.js'
@@ -46,7 +47,9 @@ export async function runImport(file, sourceId) {
   await refreshOwnTransfers()
 
   const monthLabel = summary?.month ? `${summary.month}/${summary.year}` : null
-  return { added, skipped, warnings: warnings || [], period, monthLabel }
+  // quantos desta importação ficaram sem categoria (a revisão em lote cuida deles)
+  const uncategorized = countUncategorized(useFinanceStore().entries.filter(e => e.importId === importId)).count
+  return { added, skipped, warnings: warnings || [], period, monthLabel, uncategorized }
 }
 
 /** Remove a importação e só os lançamentos dela. */

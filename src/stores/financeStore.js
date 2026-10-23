@@ -4,7 +4,7 @@ import { KEYS, load, save, debounced } from '@/modules/persistence/storage.js'
 import { today } from '@/utils/formatters.js'
 import { buildSearchIndex, matches, normalizeText } from '@/utils/search.js'
 import { dedupKey } from '@/modules/importers/dedup.js'
-import { applyRules as applyCategoryRules } from '@/modules/categories/rules.js'
+import { applyRules as applyCategoryRules, recalculateRuleCategories } from '@/modules/categories/rules.js'
 import { detectOwnTransfers, undoTransfer, markTransferManual } from '@/modules/transfers/ownTransfers.js'
 
 export const useFinanceStore = defineStore('finance', () => {
@@ -172,6 +172,11 @@ export const useFinanceStore = defineStore('finance', () => {
   }
   const saved = (changed) => (changed > 0 ? persist.flush().then(() => changed) : Promise.resolve(0))
 
+  /** Depois de remover uma regra: o que veio de regra ('rule') é recalculado e pode ficar sem categoria. Devolve quantos mudaram. */
+  function recalculateRules(rules) {
+    return saved(syncTransfers(recalculateRuleCategories(entries.value, rules)))
+  }
+
   /** Transferências entre contas próprias: nome do titular + pareamento, em todos os lançamentos (idempotente). */
   function applyOwnTransfers(holderNames) {
     return saved(syncTransfers(detectOwnTransfers(entries.value, holderNames)))
@@ -201,6 +206,6 @@ export const useFinanceStore = defineStore('finance', () => {
     forecastVsPaidDiff, paidCount, pendingCount,
     totalByResponsible, totalByPayer, totalByCenter, upcomingDue,
     filteredEntries,
-    addEntries, removeByImport, setEntryCategory, applyRules, applyOwnTransfers, undoOwnTransfer, markOwnTransfer, hydrate
+    addEntries, removeByImport, setEntryCategory, applyRules, recalculateRules, applyOwnTransfers, undoOwnTransfer, markOwnTransfer, hydrate
   }
 })

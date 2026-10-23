@@ -96,6 +96,9 @@
             <p class="text-sm font-bold text-white">{{ importResult.added }} {{ importResult.added === 1 ? 'lançamento importado' : 'lançamentos importados' }}<template v-if="importResult.skipped > 0"> · {{ importResult.skipped }} {{ importResult.skipped === 1 ? 'duplicata ignorada' : 'duplicatas ignoradas' }}</template></p>
             <p class="mt-1 break-words text-xs text-slate-400">Arquivo: <span class="font-semibold text-slate-200">{{ importResult.fileName }}</span></p>
             <p v-if="importResult.monthLabel" data-testid="import-month" class="mt-1 text-xs text-slate-400">Extrato de <span class="font-semibold text-slate-200">{{ importResult.monthLabel }}</span></p>
+            <p v-if="importResult.uncategorized > 0" data-testid="import-uncategorized" class="mt-1 text-xs text-amber-300">
+              {{ importResult.uncategorized }} sem categoria · <router-link to="/revisar" data-testid="import-review-link" class="font-semibold underline underline-offset-2">Revisar</router-link>
+            </p>
             <p v-if="importResult.period" data-testid="import-period" class="mt-1 text-xs text-slate-400">Período do extrato: <span class="font-semibold text-slate-200">{{ formatDate(importResult.period.start) }} a {{ formatDate(importResult.period.end) }}</span></p>
           </div>
         </div>
@@ -218,8 +221,8 @@ async function processFile(source, file) {
 
   importingId.value = source.id
   try {
-    const { added, skipped, warnings, period, monthLabel } = await runImport(file, source.id)
-    importResult.value = { added, skipped, fileName: file.name, warnings, period, monthLabel }
+    const { added, skipped, warnings, period, monthLabel, uncategorized } = await runImport(file, source.id)
+    importResult.value = { added, skipped, fileName: file.name, warnings, period, monthLabel, uncategorized }
   } catch (err) {
     importError.value = err.message || 'Não foi possível ler o arquivo. Verifique se está no formato correto.'
   } finally {

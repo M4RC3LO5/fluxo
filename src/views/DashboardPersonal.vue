@@ -18,6 +18,12 @@
           class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-xl text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30">›</button>
       </section>
 
+      <!-- avisos: lançamentos do mês sem categoria -->
+      <router-link v-if="uncategorized.count > 0" to="/revisar" data-testid="review-banner"
+        class="mx-auto flex min-h-[44px] w-full max-w-2xl items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 text-sm text-amber-200 transition-colors hover:bg-amber-500/20">
+        <span>{{ uncategorized.count }} sem categoria no mês ·</span> <span class="font-semibold underline underline-offset-2">Revisar</span>
+      </router-link>
+
       <!-- b) Entradas, Saídas e Saldo -->
       <section>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 md:gap-6">
@@ -129,6 +135,7 @@ import { computed, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFinanceStore } from '@/stores/financeStore.js'
 import PfMonthlyChart from '@/components/dashboard/PfMonthlyChart.vue'
+import { countUncategorized } from '@/modules/categories/review.js'
 import { formatCurrency } from '@/utils/formatters.js'
 import {
   NO_CATEGORY, availableMonths, monthSummary, monthlySeries, topExpensesByCategory, topExpensesByDescription, monthLabel
@@ -158,6 +165,7 @@ function selectMonth(month) {
 }
 
 const summary = computed(() => monthSummary(financeStore.entries, selected.value))
+const uncategorized = computed(() => countUncategorized(financeStore.entries, { month: selected.value }))
 const series = computed(() => monthlySeries(financeStore.entries, selected.value, 12))
 const byCategory = computed(() => topExpensesByCategory(financeStore.entries, selected.value, 5))
 const byDescription = computed(() => topExpensesByDescription(financeStore.entries, selected.value, 5))

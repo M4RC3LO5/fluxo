@@ -28,7 +28,7 @@ export function matchRule(entry, rules) {
 }
 
 // categoria de saída não vai para entrada (e vice-versa); categoria de fora do catálogo não restringe
-function compatible(entry, category) {
+export function compatible(entry, category) {
   const kind = findCategory(category)?.kind
   if (!kind || (entry.type !== 'in' && entry.type !== 'out')) return true
   return kind === entry.type
@@ -52,6 +52,21 @@ export function applyRules(entries, rules) {
     if (!rule || !compatible(entry, rule.category)) return entry
     if (entry.category === rule.category && entry.categorySource === 'rule') return entry
     return { ...entry, category: rule.category, categorySource: 'rule' }
+  })
+}
+
+/**
+ * Recalcula só o que veio de regra (categorySource 'rule'), depois que uma regra foi removida:
+ * cada um ganha a melhor regra que sobrou ou, se não houver nenhuma, volta a ficar sem categoria.
+ * 'bank', 'manual' e transferência nunca são tocados. Devolve uma lista nova (os alterados são cópias).
+ */
+export function recalculateRuleCategories(entries, rules) {
+  return entries.map(entry => {
+    if (entry.transfer || categorySourceOf(entry) !== 'rule') return entry
+    const rule = matchRule(entry, rules)
+    const next = rule && compatible(entry, rule.category) ? rule.category : null
+    if (next === (entry.category ?? null)) return entry
+    return { ...entry, category: next, categorySource: next ? 'rule' : null }
   })
 }
 
